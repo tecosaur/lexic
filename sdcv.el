@@ -149,12 +149,14 @@ Word may contain some special characters:
                  (if (listp processed) processed (list processed)))
              (list word))
            "")))
-    (unless no-history-p
+    (unless (or no-history-p (string= word
+                                      (nth sdcv--search-history-position
+                                           sdcv--search-history)))
       (setq sdcv--search-history
             (append (cl-subseq sdcv--search-history
-                            0 sdcv--search-history-position)
+                            0 (1+ sdcv--search-history-position))
                     (list word))
-            sdcv--search-history-position (length sdcv--search-history)))
+            sdcv--search-history-position (1- (length sdcv--search-history))))
     (if (not interactive-p)
         result
       (with-current-buffer (get-buffer-create sdcv-buffer-name)
@@ -201,7 +203,7 @@ and `sdcv-dictionary-path'."
                 sdcv-current-dictionary-list))))
 
 (defvar sdcv--search-history nil)
-(defvar sdcv--search-history-position 0)
+(defvar sdcv--search-history-position -1)
 
 (defun sdcv-search-history-backwards ()
   (interactive)
