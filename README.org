@@ -1,0 +1,26 @@
+#+TITLE: Emacs StarDict (CLI Version) Viewer
+#+AUTHOR: tecosaur
+#+DATE: July 29, 2020
+
+It's nice to know more about the words you're using. Online dictionaries have
+proliferated and become quite useful, and there are some nice packages available
+like [[https://github.com/abo-abo/define-word][define-word]] which make use of such online resources.
+
+However, the quicker I can know more about the words I'm using, the better!
+Offline dictionaries are obviously the way to go then, and the Console
+implementation of StarDict already has a package or two for Emacs.
+
+I like things fancy though, and all of the existing StarDict interfaces seem a
+bit ... restrained --- so I grabbed one of the existing ones and hacked away on it
+for a bit.
+
+This has rich support for the following dictionaries:
+ + [[http://download.huzheng.org/dict.org/stardict-dictd-web1913-2.4.2.tar.bz2][Webster's Revised Unabridged Dictionary (1913)]]
+ + [[https://packages.debian.org/sid/dict-gcide][GCIDE]] (with conversion from dict to StarDict)
+ + [[http://download.huzheng.org/bigdict/stardict-Soule_s_Dictionary_of_English_Synonyms-2.4.2.tar.bz2][Soule's Dictionary of English Synonyms]]
+ + [[http://download.huzheng.org/dict.org/stardict-dictd_www.dict.org_elements-2.4.2.tar.bz2][Elements Database]]
+ + [[https://github.com/tuxor1337/dictmaster][Douglas Harper's Online Etymology Dictionary]]
+
+If you happen to use Doom, you may find [[https://tecosaur.github.io/emacs-config/config.html#stardict][this section]] of my config interesting.
+
+[[file:sdcv.gif]]
