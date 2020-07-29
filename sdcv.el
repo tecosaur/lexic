@@ -83,7 +83,7 @@
 
 (require 'outline)
 (require 'dash)
-(require 'cl)
+(require 'cl-lib)
 (provide 'sdcv)
 
 ;;; ==================================================================
@@ -151,7 +151,7 @@ Word may contain some special characters:
            "")))
     (unless no-history-p
       (setq sdcv--search-history
-            (append (subseq sdcv--search-history
+            (append (cl-subseq sdcv--search-history
                             0 sdcv--search-history-position)
                     (list word))
             sdcv--search-history-position (length sdcv--search-history)))
