@@ -1670,9 +1670,9 @@ This should also work nicely with GCIDE."
     reflowed-text))
 
 (defun sdcv-format-online-etym (entry &optional expected-word)
-  "Make an html ENTRY for WORD look nice.
+  "Make an html ENTRY look nice.
 Designed for an export of Douglas Harper's Online Etymology Dictionary,
-sourced from http://tovotu.de/data/stardict/etymonline.zip."
+collected using https://framagit.org/tuxor1337/dictmaster."
   (->> (string-join
         (mapcar (lambda (e) (plist-get e :info))
                 (-filter (lambda (e) (string= (plist-get e :dict)
@@ -1710,8 +1710,8 @@ sourced from http://tovotu.de/data/stardict/etymonline.zip."
         "<span style=\".*?\">\\(.*?\\)</span>"
         (lambda (match) (propertize (match-string 1 match) 'face 'font-lock-doc-face)))
        (replace-regexp-in-string
-        "[0-9]\\{4\\}s?\\|[0-9]\\{2\\}c"
-        (lambda (match) (propertize match 'face 'font-lock-type-face)))
+        "[0-9]\\{4\\}s?\\|[0-9]+c\\."
+        (lambda (match) (propertize match 'face 'font-lock-string-face)))
        (replace-regexp-in-string
         "<span>\\(.*?\\)</span>\\( (.+?)\\)?"
         (lambda (match)
@@ -1721,6 +1721,20 @@ sourced from http://tovotu.de/data/stardict/etymonline.zip."
              (propertize linked 'face 'font-lock-keyword-face)
              (when pos (propertize (replace-regexp-in-string "\\([0-9]+\\))" " \\1)" pos)
                                    'face '(bold diff-context)))))))
+       (replace-regexp-in-string
+        "<blockquote>\\(.+?\\) ?\\[\\(.+\\)\\]</blockquote>"
+        (lambda (match)
+          (concat "❝"
+                  (propertize
+                   (sdcv-format-reflow-text
+                    (match-string 1 match) 80 5 1 " ")
+                   'face 'diff-context)
+                  "❞\n"
+                  (propertize (concat " ──"
+                                      (sdcv-format-reflow-text (match-string 2 match)
+                                                               75 5 3 "   "))
+                               'face '(italic font-lock-type-face))
+                  )))
        (replace-regexp-in-string "<br/><br/>" "")
        (replace-regexp-in-string
         "<p>\\(.*?\\)</p>"
