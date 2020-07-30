@@ -402,7 +402,7 @@ the beginning of the buffer."
 (defvar sdcv-wait-timeout 2
   "The max time (in seconds) to wait for the sdcv process to
 produce some output.")
-(defvar sdcv-wait-interval 0.01
+(defvar sdcv-wait-interval 0.1
   "The interval (in seconds) to sleep each time to wait for
 sdcv's output.")
 
@@ -432,6 +432,7 @@ characters are stripped.")
                              sdcv-process-buffer-name
                              sdcv-program-path
                              (sdcv-generate-dictionary-argument)))
+        (set-process-query-on-exit-flag process nil)
         ;; kill the initial prompt
         (let ((i 0))
           (message "starting sdcv...")
@@ -443,7 +444,8 @@ characters are stripped.")
             ;; timeout
             (kill-process process)
             (error "ERROR: timeout waiting for sdcv"))
-          (erase-buffer))))
+          (erase-buffer))
+        (message "")))
     process))
 
 (defun sdcv-buffer-tail (length)
