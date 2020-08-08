@@ -8,11 +8,14 @@ like [[https://github.com/abo-abo/define-word][define-word]] which make use of s
 
 However, the quicker I can know more about the words I'm using, the better!
 Offline dictionaries are obviously the way to go then, and the Console
-implementation of StarDict already has a package or two for Emacs.
+implementation of StarDict already has a package or two for Emacs which I can
+build off.
 
-I like things fancy though, and all of the existing StarDict interfaces seem a
-bit ... restrained --- so I grabbed one of the existing ones and hacked away on it
-for a bit.
+However, I'd like to really focus on the words, and making it easy and intuitive
+as possible to gain a greater understanding of the words and phrases we use.
+
+Thus, I wanted the focus here to not be on the specific backend used (though
+only =sdcv= has been implemented as of yet)
 
 This has rich support for the following dictionaries:
  + [[http://download.huzheng.org/dict.org/stardict-dictd-web1913-2.4.2.tar.bz2][Webster's Revised Unabridged Dictionary (1913)]]
