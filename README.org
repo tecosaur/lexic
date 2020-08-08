@@ -26,4 +26,4 @@ This has rich support for the following dictionaries:
 
 If you happen to use Doom, you may find [[https://tecosaur.github.io/emacs-config/config.html#stardict][this section]] of my config interesting.
 
-[[file:lexic.gif]]
+[[https://tecosaur.com/lfs/lexic/lexic.gif]]
