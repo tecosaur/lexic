@@ -1,4 +1,4 @@
-;;; sdcv.el --- major mode to do dictionary query through sdcv -*- lexical-binding: t; -*-
+;;; lexic.el --- a major mode to find out more about words -*- lexical-binding: t; -*-
 
 ;; Copyright 2006~2008 pluskid,
 ;;           2011~2012 gucong
@@ -24,22 +24,22 @@
 
 ;;; Commentary:
 
-;; This is a major mode to view output of dictionary search of sdcv.
+;; This is a major mode to view output of dictionary search of lexic.
 
 ;; Put this file into your load-path and the following into your
 ;; ~/.emacs:
-;;   (require 'sdcv-mode)
-;;   (global-set-key (kbd "C-c d") 'sdcv-search)
+;;   (require 'lexic-mode)
+;;   (global-set-key (kbd "C-c d") 'lexic-search)
 
 ;;; Changelog:
 
 ;; 2020/07/28
-;;     * New variable: `sdcv-dictionary-specs', allows for
+;;     * New variable: `lexic-dictionary-specs', allows for
 ;;       - Dictionary display names
 ;;       - Custom dictionary entry formatters
 ;;       - Dictionary sorting
 ;;     * Update outline function calls to replace depreciated names.'
-;;     * Tweak sdcv-mode
+;;     * Tweak lexic-mode
 ;;       - Remove font-locking
 ;;       - Change `outline-regexp' to ZERO WIDTH SPACE
 ;;       - Add `outline-heading-end-regexp', a PUNCTUATION SPACE
@@ -49,27 +49,27 @@
 ;;         - TAB for toggling an entry
 ;;     * Expand popup window
 ;;     * Add linear history navigation
-;;     * Revise behaviour of `sdcv-next-entry' and `sdcv-previous-entry'
-;;     * New function: `sdcv-get-outline-path' which gives the structural path
+;;     * Revise behaviour of `lexic-next-entry' and `lexic-previous-entry'
+;;     * New function: `lexic-get-outline-path' which gives the structural path
 ;;       to the current position in buffer, e.g. dict → word v. t. → 1. (Chem.)
 ;;     * Remove (now unused) custom face vars, could do with adding some
 ;;       new face vars in the future
-;;     * Change the default of `sdcv-program-path' to be an absolute path
-;;     * New functions: `sdcv-format-result', `sdcv-failed-p',
-;;       and `sdcv-format-failure' to handle the upgraded entry prodessing
-;;     * New functions: `sdcv-format-webster', `sdcv-format-online-etym',
-;;       `sdcv-format-element', and `sdcv-format-soule' to format
-;;       the dictionaries recognised by default in `sdcv-dictionary-specs'.
-;;       - with helper functions `sdcv-format-webster-diacritics', and
-;;         `sdcv-format-expand-abbreviations' for nicer content.
+;;     * Change the default of `lexic-program-path' to be an absolute path
+;;     * New functions: `lexic-format-result', `lexic-failed-p',
+;;       and `lexic-format-failure' to handle the upgraded entry prodessing
+;;     * New functions: `lexic-format-webster', `lexic-format-online-etym',
+;;       `lexic-format-element', and `lexic-format-soule' to format
+;;       the dictionaries recognised by default in `lexic-dictionary-specs'.
+;;       - with helper functions `lexic-format-webster-diacritics', and
+;;         `lexic-format-expand-abbreviations' for nicer content.
 
 ;; 2012/01/02
-;;     * New variable: `sdcv-word-processor'
+;;     * New variable: `lexic-word-processor'
 ;;     * Breaking change:
-;;       for `shttps://github.com/gucong/emacs-sdcv/blob/master/sdcv-mode.elhttps://github.com/gucong/emacs-sdcv/blob/master/sdcv-mode.eldcv-dictionary-list' and `sdcv-dictionary-alist',
+;;       for `shttps://github.com/gucong/emacs-lexic/blob/master/lexic-mode.elhttps://github.com/gucong/emacs-lexic/blob/master/lexic-mode.eldcv-dictionary-list' and `lexic-dictionary-alist',
 ;;       non-list (non-nil) value now means full dictionary list
-;;     * Rewrite `sdcv-search' for both interactive and non-interactive use
-;;     * `sdcv-dictionary-list' is left for customization use only
+;;     * Rewrite `lexic-search' for both interactive and non-interactive use
+;;     * `lexic-dictionary-list' is left for customization use only
 ;;     * Better highlighting.
 ;;
 ;; 2011/06/30
@@ -77,30 +77,30 @@
 ;;     * Keymap modification
 ;;
 ;; 2008/06/11
-;;     * sdcv-mode v 0.1 init (with background process)
+;;     * lexic-mode v 0.1 init (with background process)
 
 ;;; Code:
 
 (require 'outline)
 (require 'dash)
 (require 'cl-lib)
-(provide 'sdcv)
+(provide 'lexic)
 
 ;;; ==================================================================
-;;; Frontend, search word and display sdcv buffer
-(defun sdcv-search (word &optional dict-list-name dict-list interactive-p no-history-p)
-  "Search WORD through the command-line tool sdcv.
+;;; Frontend, search word and display lexic buffer
+(defun lexic-search (word &optional dict-list-name dict-list interactive-p no-history-p)
+  "Search WORD through the command-line tool lexic.
 The result will be displayed in buffer named with
-`sdcv-buffer-name' with `sdcv-mode' if called interactively.
+`lexic-buffer-name' with `lexic-mode' if called interactively.
 
-When provided with DICT-LIST-NAME, query `sdcv-dictionary-alist'
+When provided with DICT-LIST-NAME, query `lexic-dictionary-alist'
 to get the new dictionary list before search.
 Alternatively, dictionary list can be specified directly
 by DICT-LIST.  Any non-list value of it means using all dictionaries.
 
 When called interactively, prompt for the word.
 Prefix argument have the following meaning:
-If `sdcv-dictionary-alist' is defined,
+If `lexic-dictionary-alist' is defined,
 use prefix argument to select a new DICT-LIST-NAME.
 Otherwise, prefix argument means using all dictionaries.
 
@@ -112,11 +112,11 @@ Word may contain some special characters:
     \       escape the character right after"
   (interactive
    (let* ((dict-list-name
-           (and current-prefix-arg sdcv-dictionary-alist
+           (and current-prefix-arg lexic-dictionary-alist
                 (completing-read "Select dictionary list: "
-                                 sdcv-dictionary-alist nil t)))
+                                 lexic-dictionary-alist nil t)))
           (dict-list
-           (and current-prefix-arg (not sdcv-dictionary-alist)))
+           (and current-prefix-arg (not lexic-dictionary-alist)))
           (guess (or (and transient-mark-mode mark-active
                           (buffer-substring-no-properties
                            (region-beginning) (region-end)))
@@ -125,48 +125,48 @@ Word may contain some special characters:
                              nil nil guess)))
      (list word dict-list-name dict-list t)))
   ;; init current dictionary list
-  (when (null sdcv-current-dictionary-list)
-    (setq sdcv-current-dictionary-list sdcv-dictionary-list))
+  (when (null lexic-current-dictionary-list)
+    (setq lexic-current-dictionary-list lexic-dictionary-list))
   ;; dict-list-name to dict-list
   (when (and (not dict-list) dict-list-name)
-    (if (not sdcv-dictionary-alist)
-        (error "`sdcv-dictionary-alist' not defined"))
+    (if (not lexic-dictionary-alist)
+        (error "`lexic-dictionary-alist' not defined"))
     (setq dict-list
-          (cdr (assoc dict-list-name sdcv-dictionary-alist))))
+          (cdr (assoc dict-list-name lexic-dictionary-alist))))
   ;; prepare new dictionary list
-  (when (and dict-list (not (equal sdcv-current-dictionary-list dict-list)))
-    (setq sdcv-current-dictionary-list dict-list)
-    ;; kill sdcv process
-    (and (get-process sdcv-process-name)
-         (kill-process (get-process sdcv-process-name)))
-    (while (get-process sdcv-process-name)
+  (when (and dict-list (not (equal lexic-current-dictionary-list dict-list)))
+    (setq lexic-current-dictionary-list dict-list)
+    ;; kill lexic process
+    (and (get-process lexic-process-name)
+         (kill-process (get-process lexic-process-name)))
+    (while (get-process lexic-process-name)
       (sleep-for 0.01)))
   (let ((result
           (mapconcat
-           (lambda (w) (sdcv-do-lookup w))
-           (if sdcv-word-processor
-               (let ((processed (funcall sdcv-word-processor word)))
+           (lambda (w) (lexic-do-lookup w))
+           (if lexic-word-processor
+               (let ((processed (funcall lexic-word-processor word)))
                  (if (listp processed) processed (list processed)))
              (list word))
            "")))
     (unless (or no-history-p (string= word
-                                      (nth sdcv--search-history-position
-                                           sdcv--search-history)))
-      (setq sdcv--search-history
-            (append (cl-subseq sdcv--search-history
-                            0 (1+ sdcv--search-history-position))
+                                      (nth lexic--search-history-position
+                                           lexic--search-history)))
+      (setq lexic--search-history
+            (append (cl-subseq lexic--search-history
+                            0 (1+ lexic--search-history-position))
                     (list word))
-            sdcv--search-history-position (1- (length sdcv--search-history))))
+            lexic--search-history-position (1- (length lexic--search-history))))
     (if (not interactive-p)
         result
-      (with-current-buffer (get-buffer-create sdcv-buffer-name)
+      (with-current-buffer (get-buffer-create lexic-buffer-name)
         (setq buffer-read-only nil)
         (erase-buffer)
         (insert result))
-      (sdcv-goto-sdcv)
-      (sdcv-mode)
-      (sdcv-mode-reinit)
-      (let* ((window (get-buffer-window (sdcv-get-buffer)))
+      (lexic-goto-lexic)
+      (lexic-mode)
+      (lexic-mode-reinit)
+      (let* ((window (get-buffer-window (lexic-get-buffer)))
              (height (window-height window))
              (min-height (pcase (count-lines (point-min) (point-max))
                            ((pred (> 50)) 12)
@@ -175,122 +175,122 @@ Word may contain some special characters:
         (when (> min-height height)
           (window-resize window (- 12 height)))))))
 
-(defun sdcv-search-word-at-point ()
+(defun lexic-search-word-at-point ()
   (interactive)
-  (sdcv-search
+  (lexic-search
    (downcase
     (or (and transient-mark-mode mark-active
              (buffer-substring-no-properties
               (region-beginning) (region-end)))
         (current-word nil t))) nil nil t))
 
-(defun sdcv-list-dictionary ()
+(defun lexic-list-dictionary ()
   "Show available dictionaries."
   (interactive)
   (let (resize-mini-windows)
-    (shell-command "sdcv -l" sdcv-buffer-name)))
+    (shell-command "lexic -l" lexic-buffer-name)))
 
-(defvar sdcv-current-dictionary-list nil)
+(defvar lexic-current-dictionary-list nil)
 
-(defun sdcv-generate-dictionary-argument ()
-  "Generate dictionary argument for sdcv from `sdcv-current-dictionary-list'
-and `sdcv-dictionary-path'."
+(defun lexic-generate-dictionary-argument ()
+  "Generate dictionary argument for lexic from `lexic-current-dictionary-list'
+and `lexic-dictionary-path'."
   (append
-   (and sdcv-dictionary-path (list "--data-dir" sdcv-dictionary-path))
-   (and (listp sdcv-current-dictionary-list)
+   (and lexic-dictionary-path (list "--data-dir" lexic-dictionary-path))
+   (and (listp lexic-current-dictionary-list)
         (mapcan (lambda (dict)
                   (list "-u" dict))
-                sdcv-current-dictionary-list))))
+                lexic-current-dictionary-list))))
 
-(defvar sdcv--search-history nil)
-(defvar sdcv--search-history-position -1)
+(defvar lexic--search-history nil)
+(defvar lexic--search-history-position -1)
 
-(defun sdcv-search-history-backwards ()
+(defun lexic-search-history-backwards ()
   (interactive)
-  (if (> sdcv--search-history-position 0)
-      (sdcv-search (nth (setq sdcv--search-history-position
-                              (1- sdcv--search-history-position))
-                        sdcv--search-history)
+  (if (> lexic--search-history-position 0)
+      (lexic-search (nth (setq lexic--search-history-position
+                              (1- lexic--search-history-position))
+                        lexic--search-history)
                    nil nil t t)
     (message "At start of search history.")))
 
-(defun sdcv-search-history-forwards ()
+(defun lexic-search-history-forwards ()
   (interactive)
-  (if (> (length sdcv--search-history) sdcv--search-history-position)
-      (sdcv-search (nth (setq sdcv--search-history-position
-                              (1+ sdcv--search-history-position))
-                        sdcv--search-history)
+  (if (> (length lexic--search-history) lexic--search-history-position)
+      (lexic-search (nth (setq lexic--search-history-position
+                              (1+ lexic--search-history-position))
+                        lexic--search-history)
                    nil nil t t)
     (message "At end of search history.")))
 
 ;;; ==================================================================
-;;; utilities to switch from and to sdcv buffer
-(defvar sdcv-previous-window-conf nil
-  "Window configuration before switching to sdcv buffer.")
-(defun sdcv-goto-sdcv ()
-  "Switch to sdcv buffer in other window."
+;;; utilities to switch from and to lexic buffer
+(defvar lexic-previous-window-conf nil
+  "Window configuration before switching to lexic buffer.")
+(defun lexic-goto-lexic ()
+  "Switch to lexic buffer in other window."
   (interactive)
   (unless (eq (current-buffer)
-	      (sdcv-get-buffer))
-    (setq sdcv-previous-window-conf (current-window-configuration)))
-  (let* ((buffer (sdcv-get-buffer))
+	      (lexic-get-buffer))
+    (setq lexic-previous-window-conf (current-window-configuration)))
+  (let* ((buffer (lexic-get-buffer))
          (window (get-buffer-window buffer)))
     (if (null window)
         (switch-to-buffer-other-window buffer)
       (select-window window))))
 
-(defun sdcv-return-from-sdcv ()
-  "Bury sdcv buffer and restore the previous window configuration."
+(defun lexic-return-from-lexic ()
+  "Bury lexic buffer and restore the previous window configuration."
   (interactive)
-  (if (window-configuration-p sdcv-previous-window-conf)
+  (if (window-configuration-p lexic-previous-window-conf)
       (progn
-        (set-window-configuration sdcv-previous-window-conf)
-        (setq sdcv-previous-window-conf nil)
-        (bury-buffer (sdcv-get-buffer)))
+        (set-window-configuration lexic-previous-window-conf)
+        (setq lexic-previous-window-conf nil)
+        (bury-buffer (lexic-get-buffer)))
     (bury-buffer)))
 
-(defun sdcv-get-buffer ()
-  "Get the sdcv buffer. Create one if there's none."
-  (let ((buffer (get-buffer-create sdcv-buffer-name)))
+(defun lexic-get-buffer ()
+  "Get the lexic buffer. Create one if there's none."
+  (let ((buffer (get-buffer-create lexic-buffer-name)))
     (with-current-buffer buffer
-      (unless (eq major-mode 'sdcv-mode)
-        (sdcv-mode)))
+      (unless (eq major-mode 'lexic-mode)
+        (lexic-mode)))
     buffer))
 
 ;;; ==================================================================
 
-(defvar sdcv-mode-map
+(defvar lexic-mode-map
   (let ((map (make-sparse-keymap)))
-    (define-key map "q" 'sdcv-return-from-sdcv)
-    (define-key map (kbd "RET") 'sdcv-search-word-at-point)
+    (define-key map "q" 'lexic-return-from-lexic)
+    (define-key map (kbd "RET") 'lexic-search-word-at-point)
     (define-key map "a" 'outline-show-all)
     (define-key map "h" 'outline-hide-body)
-    (define-key map "o" 'sdcv-toggle-entry)
-    (define-key map (kbd "TAB") 'sdcv-toggle-entry)
-    (define-key map "n" 'sdcv-next-entry)
-    (define-key map "N" (lambda () (interactive) (sdcv-next-entry t)))
-    (define-key map "p" 'sdcv-previous-entry)
-    (define-key map "P" (lambda () (interactive) (sdcv-previous-entry t)))
-    (define-key map "b" 'sdcv-search-history-backwards)
-    (define-key map "f" 'sdcv-search-history-forwards)
+    (define-key map "o" 'lexic-toggle-entry)
+    (define-key map (kbd "TAB") 'lexic-toggle-entry)
+    (define-key map "n" 'lexic-next-entry)
+    (define-key map "N" (lambda () (interactive) (lexic-next-entry t)))
+    (define-key map "p" 'lexic-previous-entry)
+    (define-key map "P" (lambda () (interactive) (lexic-previous-entry t)))
+    (define-key map "b" 'lexic-search-history-backwards)
+    (define-key map "f" 'lexic-search-history-forwards)
     map)
-  "Keymap for `sdcv-mode'.")
+  "Keymap for `lexic-mode'.")
 
-(define-derived-mode sdcv-mode text-mode "sdcv"
-  "Major mode to look up word through sdcv.
-\\{sdcv-mode-map}
-Turning on Text mode runs the normal hook `sdcv-mode-hook'."
+(define-derived-mode lexic-mode text-mode "lexic"
+  "Major mode to look up word through lexic.
+\\{lexic-mode-map}
+Turning on Text mode runs the normal hook `lexic-mode-hook'."
   (setq buffer-read-only t)
   (setq-local outline-regexp "\u200B+")
   (setq-local outline-heading-end-regexp "\u2008"))
 
-(defun sdcv-mode-reinit ()
+(defun lexic-mode-reinit ()
   "Re-initialize buffer.
 Hide all entrys but the first one and goto
 the beginning of the buffer."
   (ignore-errors
     (setq buffer-read-only nil)
-    (sdcv-parse-failed)
+    (lexic-parse-failed)
     (setq buffer-read-only t)
     (when (< 30 (count-lines (point-min) (point-max)))
         (outline-hide-sublevels 3))
@@ -298,7 +298,7 @@ the beginning of the buffer."
     (search-forward "\u200B\u200B")
     (left-char 1)))
 
-(defun sdcv-parse-failed ()
+(defun lexic-parse-failed ()
   (goto-char (point-min))
   (let (save-word)
     (while (re-search-forward "^[0-9]+).*-->\\(.*\\)$" nil t)
@@ -309,7 +309,7 @@ the beginning of the buffer."
           (match-string 1)
           (insert (format "\n==>%s\n" save-word)))))))
 
-(defun sdcv-expand-entry ()
+(defun lexic-expand-entry ()
   "Show the children of the current entry, or subtree if there are none."
   (outline-show-children)
   (when ; no children
@@ -317,10 +317,10 @@ the beginning of the buffer."
                 (save-excursion (outline-end-of-subtree) (point))))
     (outline-show-subtree)))
 
-(defun sdcv-next-entry (&optional linear)
+(defun lexic-next-entry (&optional linear)
   "Move to the next entry, targeting the same level unless LINEAR is set."
   (interactive)
-  (when (< 1 (sdcv-outline-level))
+  (when (< 1 (lexic-outline-level))
     (outline-hide-subtree))
   (if linear
       (outline-next-heading)
@@ -332,12 +332,12 @@ the beginning of the buffer."
              (outline-up-heading 1 t)
              (outline-forward-same-level 1))
          (error (progn (outline-next-heading)
-                       (sdcv-expand-entry)))))))
-  (sdcv-expand-entry)
+                       (lexic-expand-entry)))))))
+  (lexic-expand-entry)
   (recenter-top-bottom 1)
-  (message "%s" (sdcv-get-outline-path)))
+  (message "%s" (lexic-get-outline-path)))
 
-(defun sdcv-previous-entry (&optional linear)
+(defun lexic-previous-entry (&optional linear)
   "Move to the previous entry, targeting the same level unless LINEAR is set."
   (interactive)
   (outline-hide-subtree)
@@ -351,11 +351,11 @@ the beginning of the buffer."
          (condition-case nil
              (outline-up-heading 1 t)
            (error (outline-previous-heading))))))
-    (sdcv-expand-entry)
+    (lexic-expand-entry)
     (recenter-top-bottom 2))
-  (message "%s" (sdcv-get-outline-path)))
+  (message "%s" (lexic-get-outline-path)))
 
-(defun sdcv-toggle-entry ()
+(defun lexic-toggle-entry ()
   (interactive)
   (save-excursion
     (outline-back-to-heading)
@@ -366,89 +366,89 @@ the beginning of the buffer."
       (outline-show-subtree))))
 
 ;;; ==================================================================
-;;; Support for sdcv process in background
-(defun sdcv-do-lookup (word &optional raw-p)
-  "Send the word to the sdcv process and return the result."
-  (let ((process (sdcv-get-process)))
+;;; Support for lexic process in background
+(defun lexic-do-lookup (word &optional raw-p)
+  "Send the word to the lexic process and return the result."
+  (let ((process (lexic-get-process)))
     (process-send-string process (concat word "\n"))
     (with-current-buffer (process-buffer process)
       (let ((i 0) result done)
 	(while (and (not done)
-		    (< i sdcv-wait-timeout))
-	  (when (sdcv-match-tail sdcv-word-prompts)
+		    (< i lexic-wait-timeout))
+	  (when (lexic-match-tail lexic-word-prompts)
 	    (setq result (buffer-substring-no-properties (point-min)
 						      (point-max)))
 	    (setq done t))
-	  (when (sdcv-match-tail sdcv-choice-prompts)
+	  (when (lexic-match-tail lexic-choice-prompts)
 	    (process-send-string process "-1\n"))
 	  (unless done
-	    (sleep-for sdcv-wait-interval)
-	    (setq i (+ i sdcv-wait-interval))))
-	(unless (< i sdcv-wait-timeout)
+	    (sleep-for lexic-wait-interval)
+	    (setq i (+ i lexic-wait-interval))))
+	(unless (< i lexic-wait-timeout)
 	  ;; timeout
 	  (kill-process process)
-	  (error "ERROR: timeout waiting for sdcv"))
+	  (error "ERROR: timeout waiting for lexic"))
 	(erase-buffer)
   (if raw-p result
-    (sdcv-format-result result))))))
+    (lexic-format-result result))))))
 
-(defun sdcv-oneshot-lookup (word &optional raw-p args)
+(defun lexic-oneshot-lookup (word &optional raw-p args)
   (let ((result (shell-command-to-string
-                 (concat sdcv-program-path " -n " args
+                 (concat lexic-program-path " -n " args
                          " '" (replace-regexp-in-string "'" "\\'" word) "'"))))
     (if raw-p result
-      (sdcv-format-result result))))
+      (lexic-format-result result))))
 
-(defvar sdcv-wait-timeout 2
-  "The max time (in seconds) to wait for the sdcv process to
+(defvar lexic-wait-timeout 2
+  "The max time (in seconds) to wait for the lexic process to
 produce some output.")
-(defvar sdcv-wait-interval 0.1
+(defvar lexic-wait-interval 0.1
   "The interval (in seconds) to sleep each time to wait for
-sdcv's output.")
+lexic's output.")
 
-(defconst sdcv-process-name "%sdcv-mode-process%")
-(defconst sdcv-process-buffer-name "*sdcv-mode-process*")
+(defconst lexic-process-name "%lexic-mode-process%")
+(defconst lexic-process-buffer-name "*lexic-mode-process*")
 
-(defvar sdcv-word-prompts '("Enter word or phrase: ")
-  "A list of prompts that sdcv use to prompt for word.")
+(defvar lexic-word-prompts '("Enter word or phrase: ")
+  "A list of prompts that lexic use to prompt for word.")
 
-(defvar sdcv-choice-prompts '("Your choice[-1 to abort]: ")
-  "A list of prompts that sdcv use to prompt for a choice
+(defvar lexic-choice-prompts '("Your choice[-1 to abort]: ")
+  "A list of prompts that lexic use to prompt for a choice
 of multiple candicates.")
 
-(defvar sdcv-result-patterns '("^Found [0-9]+ items, similar to [*?/|]*\\(.+?\\)[*?]*\\.")
-  "A list of patterns to extract result word of sdcv. Special
+(defvar lexic-result-patterns '("^Found [0-9]+ items, similar to [*?/|]*\\(.+?\\)[*?]*\\.")
+  "A list of patterns to extract result word of lexic. Special
 characters are stripped.")
 
-(defun sdcv-get-process ()
-  "Get or create the sdcv process."
-  (let ((process (get-process sdcv-process-name)))
+(defun lexic-get-process ()
+  "Get or create the lexic process."
+  (let ((process (get-process lexic-process-name)))
     (when (null process)
       (with-current-buffer (get-buffer-create
-                            sdcv-process-buffer-name)
+                            lexic-process-buffer-name)
         (erase-buffer)
         (setq process (apply 'start-process
-                             sdcv-process-name
-                             sdcv-process-buffer-name
-                             sdcv-program-path
-                             (sdcv-generate-dictionary-argument)))
+                             lexic-process-name
+                             lexic-process-buffer-name
+                             lexic-program-path
+                             (lexic-generate-dictionary-argument)))
         (set-process-query-on-exit-flag process nil)
         ;; kill the initial prompt
         (let ((i 0))
-          (message "starting sdcv...")
-          (while (and (not (sdcv-match-tail sdcv-word-prompts))
-                      (< i sdcv-wait-timeout))
-            (sit-for sdcv-wait-interval t)
-            (setq i (+ i sdcv-wait-interval)))
-          (unless (< i sdcv-wait-timeout)
+          (message "starting lexic...")
+          (while (and (not (lexic-match-tail lexic-word-prompts))
+                      (< i lexic-wait-timeout))
+            (sit-for lexic-wait-interval t)
+            (setq i (+ i lexic-wait-interval)))
+          (unless (< i lexic-wait-timeout)
             ;; timeout
             (kill-process process)
-            (error "ERROR: timeout waiting for sdcv"))
+            (error "ERROR: timeout waiting for lexic"))
           (erase-buffer))
         (message "")))
     process))
 
-(defun sdcv-buffer-tail (length)
+(defun lexic-buffer-tail (length)
   "Get a substring of length LENGTH at the end of
 current buffer."
   (let ((beg (- (point-max) length))
@@ -457,7 +457,7 @@ current buffer."
 	(setq beg (point-min)))
     (buffer-substring-no-properties beg end)))
 
-(defun sdcv-match-tail (prompts)
+(defun lexic-match-tail (prompts)
   (let ((done nil)
 	(prompt nil))
     (while (and (not done)
@@ -465,7 +465,7 @@ current buffer."
       (setq prompt (car prompts))
       (setq prompts (cdr prompts))
       (when (string-equal prompt
-                          (sdcv-buffer-tail (length prompt)))
+                          (lexic-buffer-tail (length prompt)))
         (delete-region (- (point-max) (length prompt))
                        (point-max))
         (setq done t)))
@@ -475,19 +475,19 @@ current buffer."
 ;;;;  Output Processing
 ;;;;##################################################################
 
-(defun sdcv-format-result (result)
-  "For a given RESULT from sdcv, test for failure and format accordingly.
-Entries are sorted by their :priority in `sdcv-dictionary-specs', and formatted by
-`sdcv-format-result' in the case of success; `sdcv-format-failure' otherwise."
+(defun lexic-format-result (result)
+  "For a given RESULT from lexic, test for failure and format accordingly.
+Entries are sorted by their :priority in `lexic-dictionary-specs', and formatted by
+`lexic-format-result' in the case of success; `lexic-format-failure' otherwise."
 
-  (if (sdcv-failed-p result)
-      (sdcv-format-failure result)
+  (if (lexic-failed-p result)
+      (lexic-format-failure result)
 
     (let* ((entries
-            (sort (sdcv-parse-results result)
+            (sort (lexic-parse-results result)
                   (lambda (a b)
-                    (< (or (sdcv-dictionary-spec (plist-get a :dict) :priority) 1)
-                       (or (sdcv-dictionary-spec (plist-get b :dict) :priority) 1)))))
+                    (< (or (lexic-dictionary-spec (plist-get a :dict) :priority) 1)
+                       (or (lexic-dictionary-spec (plist-get b :dict) :priority) 1)))))
            (word (save-match-data
                    (string-match "\\`Found.* similar to \\(\\w+\\)\\." result)
                    (downcase (match-string 1 result)))))
@@ -497,11 +497,11 @@ Entries are sorted by their :priority in `sdcv-dictionary-specs', and formatted 
        "\u2008"
        (apply #'concat
               (mapcar (lambda (e)
-                        (sdcv-format-entry
+                        (lexic-format-entry
                          e word))
                       entries))))))
 
-(defun sdcv-parse-results (result)
+(defun lexic-parse-results (result)
   "TODO"
   (let (entries latest-match last-match dict word)
     (with-temp-buffer
@@ -529,12 +529,12 @@ Entries are sorted by their :priority in `sdcv-dictionary-specs', and formatted 
                          :info ,(buffer-substring last-match (point-max)))))))))
   )
 
-(defun sdcv-failed-p (results)
+(defun lexic-failed-p (results)
   "Whether the RESULTS match the hardcoded failure pattern."
   (if (string-match-p "Found [0-9]+ items, similar to [^.]+\\.\n0)" results) t nil))
 
-(defun sdcv-format-failure (results)
-  "When sdcv failed to match the word, format the suggestions in RESULTS."
+(defun lexic-format-failure (results)
+  "When lexic failed to match the word, format the suggestions in RESULTS."
   (let (suggestions last-match)
     (while (setq last-match
                  (string-match "^[0-9]+)\\(.*\\)-->\\([A-Za-z]+\\)"
@@ -556,7 +556,7 @@ Entries are sorted by their :priority in `sdcv-dictionary-specs', and formatted 
      (mapconcat (lambda (dict-suggestions)
                   (format "\u200B\u200B%s\n\u200B\u200B\u200B%s"
                           (propertize (or
-                                       (sdcv-dictionary-spec (car dict-suggestions) :short)
+                                       (lexic-dictionary-spec (car dict-suggestions) :short)
                                        (car dict-suggestions))
                                       'face 'outline-3)
                           (propertize (s-join "\n\u200B\u200B\u200B"
@@ -564,37 +564,37 @@ Entries are sorted by their :priority in `sdcv-dictionary-specs', and formatted 
                                       'face 'font-lock-keyword-face)))
                 (sort suggestions
                       (lambda (a b)
-                        (< (or (sdcv-dictionary-spec (car a) :priority) 1)
-                           (or (sdcv-dictionary-spec (car b) :priority) 1))))
+                        (< (or (lexic-dictionary-spec (car a) :priority) 1)
+                           (or (lexic-dictionary-spec (car b) :priority) 1))))
                 "\n"))))
 
-(defun sdcv-format-entry (entry &optional expected-word)
+(defun lexic-format-entry (entry &optional expected-word)
   "Format a given ENTRY, a plist with :word :dict and :info.
-If the DICT has a :short value in `sdcv-dictionary-specs' that is used as
+If the DICT has a :short value in `lexic-dictionary-specs' that is used as
 the display name. Likewise if present, :formatter is used to generate the
 entry."
   (let ((dict (plist-get entry :dict)))
     (concat
      "\n\u200B\u200B"
-     (propertize (or (sdcv-dictionary-spec dict :short)
+     (propertize (or (lexic-dictionary-spec dict :short)
                      dict) 'face 'outline-3)
      "\n\u2008\n"
-     (if-let* ((formatter (sdcv-dictionary-spec dict :formatter)))
+     (if-let* ((formatter (lexic-dictionary-spec dict :formatter)))
          (let ((case-fold-search nil))
            (string-trim (funcall formatter entry expected-word)))
        entry)
      "\n")))
 
-(defun sdcv-get-outline-path ()
+(defun lexic-get-outline-path ()
   "Return a string giving the structural path to the current position."
   (let ((outline-path "")
         (last-pos 0)
         outline-level-current substring level-regexp)
     (save-excursion
       (outline-back-to-heading)
-      (setq outline-level-current (sdcv-outline-level))
+      (setq outline-level-current (lexic-outline-level))
       (while (/= (point) last-pos)
-        (setq outline-level-current (sdcv-outline-level))
+        (setq outline-level-current (lexic-outline-level))
         (setq substring
               (buffer-substring
                (point)
@@ -619,49 +619,49 @@ entry."
           (outline-up-heading 1)))
      (substring outline-path 2))))
 
-(defun sdcv-outline-level ()
+(defun lexic-outline-level ()
   "It seems that while (outline-level) should work, it has issues."
   (- (save-excursion (outline-back-to-heading)
                      (search-forward-regexp "\u200B+"))
      (point)))
 
-(defun sdcv-dictionary-spec (dict spec)
+(defun lexic-dictionary-spec (dict spec)
   "Helper function to get a :SPEC of a given DICT."
-  (plist-get (cdr (assoc dict sdcv-dictionary-specs)) spec))
+  (plist-get (cdr (assoc dict lexic-dictionary-specs)) spec))
 
-(defvar sdcv-dictionary-specs
+(defvar lexic-dictionary-specs
   '(("Webster's Revised Unabridged Dictionary (1913)"
-     :formatter sdcv-format-webster
+     :formatter lexic-format-webster
      :priority 1)
     ("Elements database"
      :short "Element"
-     :formatter sdcv-format-element
+     :formatter lexic-format-element
      :priority 2)
     ("Hitchcock's Bible Names Dictionary"
      :short "Hitcchcock's Bible Names"
      :priority 3)
     ("Online Etymology Dictionary"
      :short "Etymology"
-     :formatter sdcv-format-online-etym
+     :formatter lexic-format-online-etym
      :priority 4)
     ("Soule's Dictionary of English Synonyms"
      :short "Synonyms"
-     :formatter sdcv-format-soule
+     :formatter lexic-format-soule
      :priority 5))
   "Alist of dictionary information, where the car is the name
-according to sdcv, and the cdr is a plist whith the following options:
+according to lexic, and the cdr is a plist whith the following options:
   :short - a (usually) shorter display name for the dictionary
   :formatter - a function with signature (ENTRY WORD) that returns a string
   :priority - sort priority, defaults to 1")
 
-(defun sdcv-format-webster (entry &optional expected-word)
+(defun lexic-format-webster (entry &optional expected-word)
   "Make a Webster's dictionary ENTRY for WORD look nice.
 Designed for Webster's Revised Unabridged Dictionary (1913),
 as found at http://download.huzheng.org/dict.org/stardict-dictd-web1913-2.4.2.tar.bz2.
 
 This should also work nicely with GCIDE."
     (->> (plist-get entry :info)
-         (sdcv-format-webster-diacritics)
+         (lexic-format-webster-diacritics)
          (replace-regexp-in-string ; entry dividors
           (format "\n\n\\(%s\\)" (plist-get entry :word))
           "\n                     ━━━━━━━━━ ■ ━━━━━━━━━\n\n\\1")
@@ -696,13 +696,13 @@ This should also work nicely with GCIDE."
           (lambda (match)
             (let* ((word2 (match-string 2 match))
                    (pronounciation (match-string 3 match))
-                   (part-of-speech (sdcv-format-expand-abbreviations
+                   (part-of-speech (lexic-format-expand-abbreviations
                                     (replace-regexp-in-string " \\'" ""
                                                               (match-string 4 match))))
                    (alternative-forms (when (match-string 6 match)
-                                        (sdcv-format-expand-abbreviations (match-string 5 match))))
-                   (etymology (sdcv-format-expand-abbreviations (match-string (if alternative-forms 6 5) match)))
-                   (category (sdcv-format-expand-abbreviations (match-string 7 match)))
+                                        (lexic-format-expand-abbreviations (match-string 5 match))))
+                   (etymology (lexic-format-expand-abbreviations (match-string (if alternative-forms 6 5) match)))
+                   (category (lexic-format-expand-abbreviations (match-string 7 match)))
                    (last-newline (lambda (text) (- (length text)
                                               (or (save-match-data
                                                     (string-match "\n[^\n]*\\'" text)) 0)))))
@@ -718,7 +718,7 @@ This should also work nicely with GCIDE."
                            'face '(bold font-lock-keyword-face))
                (when alternative-forms
                  (setq alternative-forms
-                       (sdcv-format-reflow-text
+                       (lexic-format-reflow-text
                         (format " [%s]" alternative-forms)
                         80 10
                         (+ 3 (if pronounciation 1 0)
@@ -729,7 +729,7 @@ This should also work nicely with GCIDE."
                              'face 'diff-context))
                (when etymology
                  (setq etymology
-                       (sdcv-format-reflow-text
+                       (lexic-format-reflow-text
                         (format " [%s]" etymology)
                         80 10
                         (+ 3 (if pronounciation 1 0)
@@ -752,8 +752,8 @@ This should also work nicely with GCIDE."
                (propertize term 'face 'font-lock-keyword-face)
                punct
                (propertize (format " (%s)"
-                                   (if sdcv-expand-abbreviations
-                                       (sdcv-format-expand-abbreviations category)
+                                   (if lexic-expand-abbreviations
+                                       (lexic-format-expand-abbreviations category)
                                      category))
                            'face 'font-lock-constant-face)))))
          (replace-regexp-in-string ; other terms
@@ -799,8 +799,8 @@ This should also work nicely with GCIDE."
                  (propertize letter 'face 'font-lock-string-face))
                (when category
                  (propertize (format " (%s)"
-                                     (if sdcv-expand-abbreviations
-                                         (sdcv-format-expand-abbreviations category)
+                                     (if lexic-expand-abbreviations
+                                         (lexic-format-expand-abbreviations category)
                                        category))
                              'face 'font-lock-constant-face))
                " "
@@ -818,12 +818,12 @@ This should also work nicely with GCIDE."
             (propertize  (concat "  "(match-string 1 match) ": ")
                          'face 'bold)))))
 
-(defvar sdcv-expand-abbreviations t
+(defvar lexic-expand-abbreviations t
   "Whether or not to try to expand abbreviations, where they are expected.")
 
-(defun sdcv-format-expand-abbreviations (content &optional force)
+(defun lexic-format-expand-abbreviations (content &optional force)
   (when content
-    (when (or sdcv-expand-abbreviations force)
+    (when (or lexic-expand-abbreviations force)
       (let ((abbreviations
              '(; A
                ("adj"                     "adjective")
@@ -1291,7 +1291,7 @@ This should also work nicely with GCIDE."
                  content t)))))
     content))
 
-(defun sdcv-format-webster-diacritics (pronunciation)
+(defun lexic-format-webster-diacritics (pronunciation)
   (let ((diacritics
          '(("[,C]" "Ç")
            ("\"u" "ü") ; uum
@@ -1637,7 +1637,7 @@ This should also work nicely with GCIDE."
              pronunciation t)))
     pronunciation))
 
-(defun sdcv-format-reflow-text (text max-width &optional min-width initial-colunm indent sepregex)
+(defun lexic-format-reflow-text (text max-width &optional min-width initial-colunm indent sepregex)
   (let* ((initial-col (or initial-colunm 0))
          (min-width (or min-width 1))
          (indent (or indent ""))
@@ -1673,7 +1673,7 @@ This should also work nicely with GCIDE."
                text))))
     reflowed-text))
 
-(defun sdcv-format-online-etym (entry &optional expected-word)
+(defun lexic-format-online-etym (entry &optional expected-word)
   "Make an html ENTRY look nice.
 Designed for an export of Douglas Harper's Online Etymology Dictionary,
 collected using https://framagit.org/tuxor1337/dictmaster."
@@ -1681,15 +1681,15 @@ collected using https://framagit.org/tuxor1337/dictmaster."
         (mapcar (lambda (e) (plist-get e :info))
                 (-filter (lambda (e) (string= (plist-get e :dict)
                                          (plist-get entry :dict)))
-                         (sdcv-parse-results
-                          (sdcv-oneshot-lookup
-                           (replace-regexp-in-string " ?(.*)" " (*)" (plist-get entry :word)) ; sdcv accepts a glob
+                         (lexic-parse-results
+                          (lexic-oneshot-lookup
+                           (replace-regexp-in-string " ?(.*)" " (*)" (plist-get entry :word)) ; lexic accepts a glob
                            t (format "-0 -u '%s'" (replace-regexp-in-string "'" "\\'" (plist-get entry :dict))))))))
        (replace-regexp-in-string
         "\\(?:\\`\\|\n\n\\)<b>\\(.+?\\) (\\(.+?\\)\\([0-9]+\\)?)</b> ?"
         (lambda (match)
           (let ((word (match-string 1 match))
-                (pos (sdcv-format-expand-abbreviations (match-string 2 match)))
+                (pos (lexic-format-expand-abbreviations (match-string 2 match)))
                 (index (match-string 3 match)))
             (concat "\n\n\u200B\u200B\u200B"
                     (propertize word 'face 'bold)
@@ -1720,7 +1720,7 @@ collected using https://framagit.org/tuxor1337/dictmaster."
         "<span>\\(.*?\\)</span>\\( (.+?)\\)?"
         (lambda (match)
           (let ((linked (match-string 1 match))
-                (pos (sdcv-format-expand-abbreviations (match-string 2 match))))
+                (pos (lexic-format-expand-abbreviations (match-string 2 match))))
             (concat
              (propertize linked 'face 'font-lock-keyword-face)
              (when pos (propertize (replace-regexp-in-string "\\([0-9]+\\))" " \\1)" pos)
@@ -1730,12 +1730,12 @@ collected using https://framagit.org/tuxor1337/dictmaster."
         (lambda (match)
           (concat "❝"
                   (propertize
-                   (sdcv-format-reflow-text
+                   (lexic-format-reflow-text
                     (match-string 1 match) 80 5 1 " ")
                    'face 'diff-context)
                   "❞\n"
                   (propertize (concat " ──"
-                                      (sdcv-format-reflow-text (match-string 2 match)
+                                      (lexic-format-reflow-text (match-string 2 match)
                                                                75 5 3 "   "))
                                'face '(italic font-lock-type-face))
                   )))
@@ -1744,16 +1744,16 @@ collected using https://framagit.org/tuxor1337/dictmaster."
         "<p>\\(.*?\\)</p>"
         (lambda (match)
           (concat
-           (sdcv-format-reflow-text (match-string 1 match)
+           (lexic-format-reflow-text (match-string 1 match)
                                     80 5)
            "\n")))
        (replace-regexp-in-string
         "^.\\{86,\\}"
         (lambda (match)
-           (sdcv-format-reflow-text match 80 5)))
+           (lexic-format-reflow-text match 80 5)))
        ))
 
-(defun sdcv-format-element (entry element &optional expected-word)
+(defun lexic-format-element (entry element &optional expected-word)
   "Make an ENTRY for ELEMENT look nice.
 Based on http://download.huzheng.org/dict.org/stardict-dictd_www.dict.org_elements-2.4.2.tar.bz2."
   (replace-regexp-in-string
@@ -1778,7 +1778,7 @@ Atomic weight: \\((?[0-9.]+)?\\)"
              (propertize element 'face 'font-lock-string-face))))
         (plist-get entry :info)))
 
-(defun sdcv-format-soule (entry &optional expected-word)
+(defun lexic-format-soule (entry &optional expected-word)
   "Format an ENTRY for WORD in Soule's Dictionary of English Synonyms.
 Designed using http://download.huzheng.org/bigdict/stardict-Soule_s_Dictionary_of_English_Synonyms-2.4.2.tar.bz2."
   (->> (plist-get entry :info)
@@ -1790,7 +1790,7 @@ Designed using http://download.huzheng.org/bigdict/stardict-Soule_s_Dictionary_o
            (when case-fold-search
              (propertize
               'face '(bold font-lock-constant-face)))
-           (propertize (sdcv-format-expand-abbreviations (match-string 2 match))
+           (propertize (lexic-format-expand-abbreviations (match-string 2 match))
                        'face '(bold font-lock-keyword-face))
            "\u2008")))
        (replace-regexp-in-string
@@ -1806,7 +1806,7 @@ Designed using http://download.huzheng.org/bigdict/stardict-Soule_s_Dictionary_o
        (replace-regexp-in-string
         "^\\(.\\{81\\}\\)"
         (lambda (match)
-          (sdcv-format-reflow-text match 80 1 0 "   " "[, ]")))
+          (lexic-format-reflow-text match 80 1 0 "   " "[, ]")))
        (replace-regexp-in-string
         ","
         (propertize "," 'face 'font-lock-type-face))))
@@ -1815,14 +1815,14 @@ Designed using http://download.huzheng.org/bigdict/stardict-Soule_s_Dictionary_o
 ;;;;  User Options, Variables
 ;;;;##################################################################
 
-(defvar sdcv-buffer-name "*sdcv*"
-  "The name of the buffer of sdcv.")
-(defvar sdcv-dictionary-list t
+(defvar lexic-buffer-name "*lexic*"
+  "The name of the buffer of lexic.")
+(defvar lexic-dictionary-list t
   "A list of dictionaries to use.
 Each entry is a string denoting the name of a dictionary, which
-is then passed to sdcv through the '-u' command line option.
+is then passed to lexic through the '-u' command line option.
 Any non-list value means using all the dictionaries.")
-(defvar sdcv-dictionary-alist nil
+(defvar lexic-dictionary-alist nil
   "An alist of dictionaries, used to interactively form
 dictionary list. It has the form:
    ((\"full\" . t)
@@ -1831,15 +1831,15 @@ dictionary list. It has the form:
 Any cons cell here means using all dictionaries.
 ")
 
-(defvar sdcv-program-path "/usr/bin/sdcv"
-  "The path of sdcv program.")
+(defvar lexic-program-path "/usr/bin/sdcv"
+  "The path of lexic program.")
 
-(defvar sdcv-dictionary-path nil
+(defvar lexic-dictionary-path nil
   "The path of dictionaries.")
 
-(defvar sdcv-word-processor nil
+(defvar lexic-word-processor nil
   "This is the function that take a word (stirng)
-and return a word or a list of words for lookup by `sdcv-search'.
+and return a word or a list of words for lookup by `lexic-search'.
 All lookup result(s) will finally be concatenated together.
 
 `nil' value means do nothing with the original word.
@@ -1856,4 +1856,4 @@ If not, look up both of the words.
             word)))
 ")
 
-;;; sdcv.el ends here
+;;; lexic.el ends here

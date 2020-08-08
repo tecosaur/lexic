@@ -1,4 +1,4 @@
-#+TITLE: Emacs StarDict (CLI Version) Viewer
+#+TITLE: Emacs Lexical Information Viewer
 #+AUTHOR: tecosaur
 #+DATE: July 29, 2020
 
@@ -23,4 +23,4 @@ This has rich support for the following dictionaries:
 
 If you happen to use Doom, you may find [[https://tecosaur.github.io/emacs-config/config.html#stardict][this section]] of my config interesting.
 
-[[file:sdcv.gif]]
+[[file:lexic.gif]]
