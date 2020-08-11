@@ -582,7 +582,7 @@ entry."
      (if-let* ((formatter (lexic-dictionary-spec dict :formatter)))
          (let ((case-fold-search nil))
            (string-trim (funcall formatter entry expected-word)))
-       entry)
+       (plist-get entry :info))
      "\n")))
 
 (defun lexic-get-outline-path ()
