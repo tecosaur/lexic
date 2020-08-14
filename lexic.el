@@ -188,7 +188,7 @@ Word may contain some special characters:
   "Show available dictionaries."
   (interactive)
   (let (resize-mini-windows)
-    (shell-command "lexic -l" lexic-buffer-name)))
+    (shell-command (concat lexic-program-path " -l") lexic-buffer-name)))
 
 (defvar lexic-current-dictionary-list nil)
 
