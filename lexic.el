@@ -88,6 +88,8 @@
 
 ;;; ==================================================================
 ;;; Frontend, search word and display lexic buffer
+
+;;;###autoload
 (defun lexic-search (word &optional dict-list-name dict-list interactive-p no-history-p)
   "Search WORD through the command-line tool lexic.
 The result will be displayed in buffer named with
