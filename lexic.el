@@ -1833,7 +1833,7 @@ dictionary list. It has the form:
 Any cons cell here means using all dictionaries.
 ")
 
-(defvar lexic-program-path "/usr/bin/sdcv"
+(defvar lexic-program-path (executable-find "sdcv")
   "The path of lexic program.")
 
 (defvar lexic-dictionary-path nil
