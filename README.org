@@ -15,7 +15,11 @@ However, I'd like to really focus on the words, and making it easy and intuitive
 as possible to gain a greater understanding of the words and phrases we use.
 
 Thus, I wanted the focus here to not be on the specific backend used (though
-only =sdcv= has been implemented as of yet)
+only =sdcv= has been implemented as of yet). A near-term goal is to rewrite the
+implementation to abstract away the specific tool used, allowing for online
+tools among other backends (such as any future GoldenDict CLI).
+From there it could be nice to allow for combination of multiple tools (e.g.
+=sdcv= + online service).
 
 This has rich support for the following dictionaries:
  + [[http://download.huzheng.org/dict.org/stardict-dictd-web1913-2.4.2.tar.bz2][Webster's Revised Unabridged Dictionary (1913)]]
@@ -24,6 +28,9 @@ This has rich support for the following dictionaries:
  + [[http://download.huzheng.org/dict.org/stardict-dictd_www.dict.org_elements-2.4.2.tar.bz2][Elements Database]]
  + [[https://github.com/tuxor1337/dictmaster][Douglas Harper's Online Etymology Dictionary]]
 
-If you happen to use Doom, you may find [[https://tecosaur.github.io/emacs-config/config.html#stardict][this section]] of my config interesting.
+If there's something you feel is missing, feel free to make an issue --- or even
+better, a PR!
+
+If you happen to use Doom, you may find [[https://tecosaur.github.io/emacs-config/config.html#lexic][this section]] of my config interesting.
 
 [[https://tecosaur.com/lfs/lexic/lexic.gif]]
