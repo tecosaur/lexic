@@ -282,6 +282,10 @@ and `lexic-dictionary-path'."
   "Major mode to look up word through lexic.
 \\{lexic-mode-map}
 Turning on Text mode runs the normal hook `lexic-mode-hook'."
+  (setq-local text-mode-hook
+              (remove #'spell-fu-mode
+                      (remove #'flyspell-mode
+                              text-mode-hook)))
   (setq buffer-read-only t)
   (setq-local outline-regexp "\u200B+")
   (setq-local outline-heading-end-regexp "\u2008"))
