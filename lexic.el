@@ -738,7 +738,11 @@ entry. EXPECTED-WORD is the word expected in ENTRY."
     ("Soule's Dictionary of English Synonyms"
      :short "Synonyms"
      :formatter lexic-format-soule
-     :priority 5))
+     :priority 5)
+    ("An Elementary Latin Dictionary, Lewis (1890)"
+     :short "English Latin (Lewis)"
+     :formatter lexic-format-latin-dicts
+     :priority 6))
   "List of dictionary specifications.
 In each entry the car is the name according to lexic, and the cdr is
 a plist whith the following options:
@@ -1911,6 +1915,126 @@ Designed using http://download.huzheng.org/bigdict/stardict-Soule_s_Dictionary_o
        (replace-regexp-in-string
         ","
         (propertize "," 'face 'font-lock-type-face))))
+
+(defun lexic-format-latin-dicts (entry &optional expected-word)
+  "Make an html ENTRY look nice.
+Designed for an export of a Latin dictionary in the formats of
+https://nikita-moor.github.io/dictionaries/dictionaries.html"
+  (->> (plist-get entry :info)
+       ;; we don't care about things outside the entry (head, css...)
+       (funcall (lambda (s)
+                  (string-match "<entry .*?>\\(.*\\)</entry>" s)
+                  (match-string 1 s)))
+       ;; the given word. TODO change face to outline-3? original html is bold
+       (replace-regexp-in-string
+        "<orth .*?>\\(.*?\\)</orth>"
+        (lambda (match) (propertize (match-string 1 match) 'face 'bold)))
+       ;; grammar properties
+       (replace-regexp-in-string
+        "<gramGrp opt=\"n\">\\(.*?\\)</gramGrp>"
+        (lambda (match)
+          (propertize
+           (->> (match-string 1 match)
+                (replace-regexp-in-string
+                 "<gen opt=\"n\">\\([mfn]\\)</gen>"
+                 ;; TODO latin names for genders
+                 (lambda (match) (pcase (match-string 1 match)
+                                   ("m" "male")
+                                   ("f" "female")
+                                   ("n" "neutral"))))
+                ;; TODO what is pos
+                (replace-regexp-in-string "<pos opt=\"n\">\\(.*\\)</pos>"
+                                          (lambda (match) (match-string 1 match)))
+                ;; TODO what is itype
+                (replace-regexp-in-string "<itype opt=\"n\">\\(.*\\)</itype>"
+                                          (lambda (match) (match-string 1 match))))
+
+           'face '(bold font-lock-keyword-face))))
+       (replace-regexp-in-string
+        "<form opt=\"n\">\\(.*?\\)</form>"
+        (lambda (match) (match-string 1 match)))
+       (replace-regexp-in-string
+        "<sense \\(.*?\\)>\\(.*?\\)</sense>"
+        (lambda (match)
+          (save-match-data
+            (let* ((level-tag (match-string 1 match))
+                   (content (match-string 2 match))
+                   (level-s (progn (string-match "level=\"\\([0-9]+\\)\"" level-tag)
+                                   (match-string 1 level-tag)))
+                   indent)
+              (when level-s
+                (setq level (string-to-number level-s))
+                (when (> level 0)
+                  (setq indent (concat "\n" (make-string level ?\t)))))
+              (concat indent content)))))
+       (replace-regexp-in-string
+        "<etym .*?>\\(.*?\\)</etym>"
+        (lambda (match) (propertize (format "[from %s]" (match-string 1 match))
+                                    'face 'font-lock-doc-face)))
+       (replace-regexp-in-string
+        "<trans .*?>\\(.*?\\)</trans>"
+        (lambda (match) (propertize (match-string 1 match)
+                                    'face '(bold font-lock-constant-face))))
+       (replace-regexp-in-string
+        "<foreign lang=\"la\">\\(.*?\\)</foreign>"
+        (lambda (match) (propertize (match-string 1 match)
+                                    'face 'italic)))
+       (replace-regexp-in-string
+        "<usg opt=\"n\">\\(.*?\\)</usg>"
+        (lambda (match) (propertize (match-string 1 match)
+                                    'face 'font-lock-doc-face)))
+       (replace-regexp-in-string "<tr .*?>\\|</tr>" "")
+       (replace-regexp-in-string
+        "<emph>\\(.*?\\)</emph>"
+        (lambda (match) (propertize (match-string 1 match) 'face 'italic)))
+       (replace-regexp-in-string "\\([^ ]\\) +" "\\1 ")
+       (replace-regexp-in-string " :" ":")
+       (replace-regexp-in-string "<br> ?" "\n")))
+
+;;;;##################################################################
+;;;;  User Options, Variables
+;;;;##################################################################
+
+(defvar lexic-buffer-name "*lexic*"
+  "The name of the buffer of lexic.")
+(defvar lexic-dictionary-list t
+  "A list of dictionaries to use.
+Each entry is a string denoting the name of a dictionary, which
+is then passed to lexic through the '-u' command line option.
+Any non-list value means using all the dictionaries.")
+(defvar lexic-dictionary-alist nil
+  "An alist of dictionaries, used to interactively form
+dictionary list. It has the form:
+   ((\"full\" . t)
+    (\"group1\" \"dict1\" \"dict2\" ...)
+    (\"group2\" \"dict2\" \"dict3\"))
+Any cons cell here means using all dictionaries.
+")
+
+(defvar lexic-program-path (executable-find "sdcv")
+  "The path of lexic program.")
+
+(defvar lexic-dictionary-path nil
+  "The path of dictionaries.")
+
+(defvar lexic-word-processor nil
+  "This is the function that take a word (stirng)
+and return a word or a list of words for lookup by `lexic-search'.
+All lookup result(s) will finally be concatenated together.
+
+`nil' value means do nothing with the original word.
+
+The following is an example.  This function takes the original word and
+compare whether simplified and traditional form of the word are the same.
+If not, look up both of the words.
+
+      (lambda (word)
+        (let ((sim (chinese-conv word \"simplified\"))
+              (tra (chinese-conv word \"traditional\")))
+          (if (not (string= sim tra))
+              (list sim tra)
+            word)))
+")
 
 (provide 'lexic)
 ;;; lexic.el ends here
