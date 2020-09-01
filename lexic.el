@@ -739,13 +739,23 @@ entry. EXPECTED-WORD is the word expected in ENTRY."
      :short "Synonyms"
      :formatter lexic-format-soule
      :priority 5)
+    ("A Latin Dictionary, Lewis & Short (1879)"
+     :short "Latin English [Lewis & Short]"
+     :formatter lexic-format-latin-dicts :priority 6)
     ("An Elementary Latin Dictionary, Lewis (1890)"
-     :short "English Latin (Lewis)"
-     :formatter lexic-format-latin-dicts
-     :priority 6))
-  "List of dictionary specifications.
-In each entry the car is the name according to lexic, and the cdr is
-a plist whith the following options:
+     :short "Latin English [Lewis]"
+     :formatter lexic-format-latin-dicts :priority 7)
+    ("Index verbōrum, Appleton (1914)"
+     "Latin English Synonyms [Döderlein]"
+     :formatter lexic-format-appleton :priority 8)
+    ("Hand-book of Latin Synonymes, Döderlein (1875)"
+     "Latin English Synonyms [Döderlein]"
+     :formatter lexic-format-latin-dicts :priority 9)
+    ("Glossarium Anglico-Latinum, Redmond (2005)"
+     :short "English Latin [Redomnd]"
+     :formatter lexic-format-latin-dicts :priority 10))
+  "Alist of dictionary information, where the car is the name
+according to lexic, and the cdr is a plist whith the following options:
   :short - a (usually) shorter display name for the dictionary
   :formatter - a function with signature (ENTRY WORD) that returns a string
   :priority - sort priority, defaults to 1")
@@ -1916,80 +1926,159 @@ Designed using http://download.huzheng.org/bigdict/stardict-Soule_s_Dictionary_o
         ","
         (propertize "," 'face 'font-lock-type-face))))
 
-(defun lexic-format-latin-dicts (entry &optional expected-word)
+(defun lexic-format-appleton (entry &optional _expected-word)
+  "Make an html ENTRY look nice.
+Designed for an export of a Latin dictionary in the format of
+https://nikita-moor.github.io/dictionaries/dictionaries/Appleton1914.html"
+  (let  ((s (plist-get entry :info)))
+    (concat (progn (string-match "<headword>\\(.*?\\)</headword>" s)
+                   (propertize (match-string 1 s) 'face 'bold))
+            " "
+            (progn (string-match "<def>\\(.*?\\)</def>" s)
+                   (match-string 1 s)))))
+(defun lexic-format-latin-dicts (entry &optional _expected-word)
   "Make an html ENTRY look nice.
 Designed for an export of a Latin dictionary in the formats of
 https://nikita-moor.github.io/dictionaries/dictionaries.html"
-  (->> (plist-get entry :info)
-       ;; we don't care about things outside the entry (head, css...)
-       (funcall (lambda (s)
-                  (string-match "<entry .*?>\\(.*\\)</entry>" s)
-                  (match-string 1 s)))
-       ;; the given word. TODO change face to outline-3? original html is bold
-       (replace-regexp-in-string
-        "<orth .*?>\\(.*?\\)</orth>"
-        (lambda (match) (propertize (match-string 1 match) 'face 'bold)))
-       ;; grammar properties
-       (replace-regexp-in-string
-        "<gramGrp opt=\"n\">\\(.*?\\)</gramGrp>"
-        (lambda (match)
-          (propertize
-           (->> (match-string 1 match)
-                (replace-regexp-in-string
-                 "<gen opt=\"n\">\\([mfn]\\)</gen>"
-                 ;; TODO latin names for genders
-                 (lambda (match) (pcase (match-string 1 match)
-                                   ("m" "male")
-                                   ("f" "female")
-                                   ("n" "neutral"))))
-                ;; TODO what is pos
-                (replace-regexp-in-string "<pos opt=\"n\">\\(.*\\)</pos>"
-                                          (lambda (match) (match-string 1 match)))
-                ;; TODO what is itype
-                (replace-regexp-in-string "<itype opt=\"n\">\\(.*\\)</itype>"
-                                          (lambda (match) (match-string 1 match))))
+  (let ((is-first-sense t)
+        (info (plist-get entry :info))
+        (dict (plist-get entry :dict)))
+    (->> info
+         ;; we don't care about things outside the entry (head, css...)
+         (funcall (lambda (s)
+                    (or
+                     (string-match "<entry .*?>\\(.*?\\)</entry>" s)
+                     (string-match "<entryFree.*?>\\(.*?\\)</entryFree>" s)
+                     (error "No entry found for %s in %s"
+                            (plist-get entry :word)
+                            (plist-get entry :dict)))
+                    (match-string 1 s)))
+         ;; the given word. TODO change face to outline-3? original html is bold
+         (replace-regexp-in-string
+          "<orth.*?>\\(.*?\\)</orth>"
+          (lambda (match) (propertize (match-string 1 match) 'face 'bold)))
+         ;; grammar properties
+         (replace-regexp-in-string
+          "<gramGrp\\(?: opt=\"n\"\\)?>\\(.*?\\)</gramGrp>"
+          (lambda (match)
+            (propertize (match-string 1 match)
+                        'face '(bold font-lock-keyword-face))))
+         (replace-regexp-in-string
+          "<gen\\(?: opt=\"n\"\\)?>\\([mfn]\\)\\.?</gen>"
+          ;; TODO latin names for genders
+          (lambda (match) (pcase (match-string 1 match)
+                            ("m" "male")
+                            ("f" "female")
+                            ("n" "neutral"))))
+         ;; TODO what is pos
+         (replace-regexp-in-string "<pos\\(?: opt=\"n\"\\)>\\(.*?\\)</pos>"
+                                   (lambda (match)
+                                     (propertize (match-string 1 match)
+                                                 'face '(bold font-lock-keyword-face))))
+         ;; TODO what is itype
+         (replace-regexp-in-string "<itype\\(?: opt=\"n\"\\)?>\\(.*?\\)</itype>"
+                                   (lambda (match)
+                                     (propertize (match-string 1 match)
+                                                 'face '(bold font-lock-keyword-face))))
+         (replace-regexp-in-string "<cit>\\(.*?\\)</cit>"
+                                   (lambda (match)
+                                     (propertize (match-string 1 match)
+                                                 'face font-lock-keyword-face)))
+         ;; not sure why these are in the original
+         (replace-regexp-in-string
+          "<form opt=\"n\">\\(.*?\\)</form>"
+          (lambda (match) (match-string 1 match)))
+         (replace-regexp-in-string
+          "<case>\\(.*?\\)</case>"
+          (lambda (match) (match-string 1 match)))
+         ;; bibliography: author and links and stuff
+         (replace-regexp-in-string
+          "<author>\\(.*?\\)</author>"
+          (lambda (match) (propertize (match-string 1 match)
+                                      'face 'font-lock-doc-face)))
+         (replace-regexp-in-string
+          "<bibl>\\(.*?\\)</bibl>"
+          (lambda (match)
+            (save-match-data
+              (propertize
+               (->> (match-string 1 match)
+                    (replace-regexp-in-string
+                     "<a href=\"\\(.*?\\)\">\\(.*?\\)</a>"
+                     (lambda (match)
+                       ;; TODO actual link button? that requires access to the buffer...
+                       (propertize (match-string 2 match)
+                                   'face 'link))
+                     (match-string 1 match))
+                    (format "(%s)"))
+               'face 'font-lock-doc-face))))
+         (replace-regexp-in-string
+          "<b>\\(.*?\\)</b>"
+          (lambda (match) (propertize (match-string 1 match) 'face 'bold)))
+         (replace-regexp-in-string
+          "<sense\\(.*?\\)>\\(.*?\\)</sense>"
+          (lambda (match)
+            (save-match-data
+              (let* ((tags (match-string 1 match))
+                     (content (match-string 2 match))
+                     (level-s (and (string-match "level=\"\\([0-9]+\\)\"" tags)
+                                   (match-string 1 tags)))
+                     (n (and (string-match "n=\"\\(.*?\\)\"" tags)
+                             (match-string 1 tags)))
+                     level indent)
+                (when level-s
+                  (setq level (string-to-number level-s))
+                  (when (and (> level 0)
+                             ;; stop indent on first sense in Lewis & Short
+                             (not (and
+                                   is-first-sense
+                                   (equal dict "A Latin Dictionary, Lewis & Short (1879)"))))
+                    (setq indent (concat "\n" (make-string level ?\t)))))
 
-           'face '(bold font-lock-keyword-face))))
-       (replace-regexp-in-string
-        "<form opt=\"n\">\\(.*?\\)</form>"
-        (lambda (match) (match-string 1 match)))
-       (replace-regexp-in-string
-        "<sense \\(.*?\\)>\\(.*?\\)</sense>"
-        (lambda (match)
-          (save-match-data
-            (let* ((level-tag (match-string 1 match))
-                   (content (match-string 2 match))
-                   (level-s (progn (string-match "level=\"\\([0-9]+\\)\"" level-tag)
-                                   (match-string 1 level-tag)))
-                   indent)
-              (when level-s
-                (setq level (string-to-number level-s))
-                (when (> level 0)
-                  (setq indent (concat "\n" (make-string level ?\t)))))
-              (concat indent content)))))
-       (replace-regexp-in-string
-        "<etym .*?>\\(.*?\\)</etym>"
-        (lambda (match) (propertize (format "[from %s]" (match-string 1 match))
-                                    'face 'font-lock-doc-face)))
-       (replace-regexp-in-string
-        "<trans .*?>\\(.*?\\)</trans>"
-        (lambda (match) (propertize (match-string 1 match)
-                                    'face '(bold font-lock-constant-face))))
-       (replace-regexp-in-string
-        "<foreign lang=\"la\">\\(.*?\\)</foreign>"
-        (lambda (match) (propertize (match-string 1 match)
-                                    'face 'italic)))
-       (replace-regexp-in-string
-        "<usg opt=\"n\">\\(.*?\\)</usg>"
-        (lambda (match) (propertize (match-string 1 match)
-                                    'face 'font-lock-doc-face)))
-       (replace-regexp-in-string "<tr .*?>\\|</tr>" "")
-       (replace-regexp-in-string
-        "<emph>\\(.*?\\)</emph>"
-        (lambda (match) (propertize (match-string 1 match) 'face 'italic)))
-       (replace-regexp-in-string "\\([^ ]\\) +" "\\1 ")
-       (replace-regexp-in-string " :" ":")
-       (replace-regexp-in-string "<br> ?" "\n")))
+                (if (and (equal dict "A Latin Dictionary, Lewis & Short (1879)")
+                         (not is-first-sense))
+                    (setq n (propertize (concat n ". ")
+                                        'face '(bold font-lock-constant-face)))
+                  (setq n ""))
+                (message "SENSE :first %s :n %s :content %s" is-first-sense n content)
+                (setq is-first-sense nil)
+                (concat indent n content)))))
+         (replace-regexp-in-string
+          "<etym.*?>\\(.*?\\)</etym>"
+          (lambda (match) (propertize (format "[from %s]" (match-string 1 match))
+                                      'face 'font-lock-doc-face)))
+         (replace-regexp-in-string
+          "<trans .*?>\\(.*?\\)</trans>"
+          (lambda (match) (propertize (match-string 1 match)
+                                      'face '(bold font-lock-constant-face))))
+         ;; foreign langs
+         (replace-regexp-in-string
+          "<foreign lang=\".*?\">\\(.*?\\)</foreign>"
+          (lambda (match) (propertize (match-string 1 match)
+                                      'face 'italic)))
+         (replace-regexp-in-string
+          "<span lang=\".*?\">\\(.*?\\)</span>"
+          (lambda (match) (propertize (match-string 1 match)
+                                      'face 'italic)))
+         (replace-regexp-in-string "<quote.*?>\\(.*?\\)</quote>"
+                                   (lambda (match)
+                                     (propertize (format "❝%s❞" (match-string 1 match))
+                                                         'face 'italic)))
+
+         (replace-regexp-in-string
+          "<usg.*?>\\(.*?\\)</usg>"
+          (lambda (match) (propertize (match-string 1 match)
+                                      'face 'font-lock-doc-face)))
+         (replace-regexp-in-string "<tr .*?>\\|</tr>" "")
+         ;; itallics
+         (replace-regexp-in-string
+          "<hi rend=\"ital\">\\(.*?\\)</hi>"
+          (lambda (match) (propertize (match-string 1 match) 'face 'italic)))
+         (replace-regexp-in-string
+          "<emph>\\(.*?\\)</emph>"
+          (lambda (match) (propertize (match-string 1 match) 'face 'italic)))
+         (replace-regexp-in-string "\\([^ ]\\) +" "\\1 ")
+         (replace-regexp-in-string " :" ":")
+         (replace-regexp-in-string "<br> ?" "\n"))))
 
 ;;;;##################################################################
 ;;;;  User Options, Variables
