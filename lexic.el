@@ -2035,9 +2035,7 @@ avoid complications when using `mapconcat' with
         ('quote (lexic--propertize (format "“%s”" (lexic--parsecar children))
                             'face 'italic))
         ('br (concat "\n" (lexic--parsecar children)))
-        ('style
-         (message "ignoring style")
-         "")
+        ('style nil)
         ;; ignore and just carry on
         ((or 'html 'body 'dictionary 'entryfree 'tr)
          (lexic--parsecar children))
