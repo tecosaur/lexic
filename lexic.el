@@ -2032,7 +2032,7 @@ avoid complications when using `mapconcat' with
                (message "hi tags of %s" tags)
                (lexic--parsecar children)))
         ('trans (lexic--xml-propertize children 'face '(bold font-lock-constant-face)))
-        ('quote (lexic--propertize (format "❝%s❞" (lexic--parsecar children))
+        ('quote (lexic--propertize (format "“%s”" (lexic--parsecar children))
                             'face 'italic))
         ('br (concat "\n" (lexic--parsecar children)))
         ('style
