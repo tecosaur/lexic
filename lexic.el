@@ -7,6 +7,7 @@
 ;; Author: pluskid <pluskid@gmail.com>,
 ;;         gucong <gucong43216@gmail.com>,
 ;;         tecosaur <tec@tecosaur.com>
+;; Package-Requires: ((dash "2.17.0") (s "1.12.0"))
 ;;
 ;; This program is free software; you can redistribute it and/or
 ;; modify it under the terms of the GNU General Public License as
@@ -83,6 +84,7 @@
 
 (require 'outline)
 (require 'dash)
+(require 's)
 (require 'cl-lib)
 (provide 'lexic)
 
