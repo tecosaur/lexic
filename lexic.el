@@ -1984,7 +1984,6 @@ avoid complications when using `mapconcat' with
                 ("m" "male")
                 ("f" "female")
                 ("n" "neutral")))
-        ((or 'form 'case) (lexic--parsecar children))
         ((or 'author 'usg) (lexic--xml-propertize children 'face 'font-lock-doc-face))
         ('bibl (--> (lexic--parsecar children)
                     (format "(%s)" it)
@@ -2005,20 +2004,32 @@ avoid complications when using `mapconcat' with
            display))
         ('sense (let ((level-s (cdr-safe (assq 'level tags)))
                       (n (cdr-safe (assq 'n tags)))
-                      level indent)
+                      (children (lexic--parsecar children))
+
+                      level indent newline?)
+                  ;; sometimes theres an extra space which drives me mad
+                  ;; (when (= (aref children 0) ?\ )
+                  ;;   (setq children (substring children 1)))
                   (when level-s
                     (setq level (string-to-number level-s))
                     (when (> level 0)
-                      (setq indent (concat "\n" (make-string level ?\t)))))
+                      (setq indent (string-join (make-vector level "    "))
+                            newline "\n")))
 
                   (if (and (equal lexic--dict "A Latin Dictionary, Lewis & Short (1879)")
                            lexic--seen-sense-already)
                       (setq n (lexic--propertize (concat n ". ")
-                                          'face '(bold font-lock-constant-face)))
-                    (setq n ""
-                          indent ""))
+                                          'face '(bold font-lock-string-face)))
+                    (setq n nil
+                          indent nil
+                          newline nil))
                   (setq lexic--seen-sense-already t)
-                  (concat indent n (lexic--parsecar children))))
+                  (concat newline indent n
+                          (lexic-format-reflow-text
+                           children (- 80 (length indent))
+                           5 (+ (length indent) (length n))
+                           (string-join (make-vector (+ (length indent) (length n))
+                                                     " "))))))
         ('etym (lexic--propertize (format "[from %s]" (lexic--parsecar children))
                            'face 'font-lock-doc-face))
         ((or 'foreign 'emph) (lexic--xml-propertize children 'face 'italic))
@@ -2037,10 +2048,11 @@ avoid complications when using `mapconcat' with
         ('br (concat "\n" (lexic--parsecar children)))
         ('style nil)
         ;; ignore and just carry on
-        ((or 'body 'cb 'def 'dictionary 'entry 'entryfree 'head 'html 'tr)
+        ((or 'body 'cb 'def 'dictionary 'entry 'entryfree 'head 'html 'tr
+            'form 'case)
          (lexic--parsecar children))
         (_
-         (message "unknown node %s, ignoring" node-name)
+         (message "Unknown node %s, ignoring" node-name)
          (lexic--parsecar children))))))
 
 
@@ -2049,7 +2061,7 @@ avoid complications when using `mapconcat' with
 Designed for an export of a Latin dictionary in the formats of
 https://nikita-moor.github.io/dictionaries/dictionaries.html"
   (let* ((info (plist-get entry :info))
-         (dict (plist-get entry :dict))
+         (lexic--dict (plist-get entry :dict))
          (lexic--seen-sense-already nil)
          (root-node (with-temp-buffer
                       (insert info)
