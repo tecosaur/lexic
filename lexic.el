@@ -2037,7 +2037,7 @@ avoid complications when using `mapconcat' with
         ('br (concat "\n" (lexic--parsecar children)))
         ('style nil)
         ;; ignore and just carry on
-        ((or 'html 'body 'dictionary 'entryfree 'tr)
+        ((or 'body 'cb 'def 'dictionary 'entry 'entryfree 'head 'html 'tr)
          (lexic--parsecar children))
         (_
          (message "unknown node %s, ignoring" node-name)
