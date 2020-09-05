@@ -1937,20 +1937,20 @@ https://nikita-moor.github.io/dictionaries/dictionaries/Appleton1914.html"
             (progn (string-match "<def>\\(.*?\\)</def>" s)
                    (match-string 1 s)))))
 
-(defsubst lexic--propertize (string prop value)
+(defsubst lexic--add-face (string face)
   "Apply property PROP of VALUE to STRING, preserving and prioritizisg previous properties.
 
 Warning: modifies STRING."
-  (font-lock--add-text-property 0 (length string) prop value string :append)
+  (add-face-text-property 0 (length string) face 'append string)
   string)
 
 (defsubst lexic--parsecar (children)
   "Format xml nodes CHILDREN and concat the results."
   (mapconcat #'lexic-format-latin-xml children ""))
 
-(defsubst lexic--xml-propertize (children prop value)
+(defsubst lexic--xml-add-face (children face)
   "Format xml nodes CHILDREN and apply a text property PROP of VALUE to the result."
-  (lexic--propertize (lexic--parsecar children) prop value))
+  (lexic--add-face (lexic--parsecar children) face))
 
 (defvar lexic--seen-sense-already nil
   "Did we already parse a `sense' tag in the current run of
@@ -1976,18 +1976,18 @@ avoid complications when using `mapconcat' with
     ;; (message "node-name: %s" (car node))
     (cl-destructuring-bind (node-name tags . children) node
       (pcase node-name
-        ((or 'b 'orth) (lexic--xml-propertize children 'face 'bold))
+        ((or 'b 'orth) (lexic--xml-add-face children 'bold))
         ((or 'gramgrp 'pos 'itype)
-         (lexic--xml-propertize children 'face '(bold font-lock-keyword-face)))
-        ('cit (lexic--xml-propertize children 'face 'font-lock-keyword-face))
+         (lexic--xml-add-face children '(bold font-lock-keyword-face)))
+        ('cit (lexic--xml-add-face children 'font-lock-keyword-face))
         ('gen (pcase (car children)
                 ("m" "male")
                 ("f" "female")
                 ("n" "neutral")))
-        ((or 'author 'usg) (lexic--xml-propertize children 'face 'font-lock-doc-face))
+        ((or 'author 'usg) (lexic--xml-add-face children 'font-lock-doc-face))
         ('bibl (--> (lexic--parsecar children)
                     (format "(%s)" it)
-                    (lexic--propertize it 'face 'font-lock-doc-face)))
+                    (lexic--add-face it 'font-lock-doc-face)))
         ('a ;; buttonize links
          (require 'browse-url)
          (let ((link (cdr (assq 'href tags)))
@@ -2017,8 +2017,8 @@ avoid complications when using `mapconcat' with
                             newline "\n")))
                   (when (and (equal lexic--dict "A Latin Dictionary, Lewis & Short (1879)"))
                     (if lexic--seen-sense-already
-                        (setq n (lexic--propertize (concat n ". ")
-                                                   'face '(bold font-lock-string-face)))
+                        (setq n (lexic--add-face (concat n ". ")
+                                                 '(bold font-lock-string-face)))
                       (setq n nil
                             indent nil
                             newline nil)))
@@ -2031,26 +2031,26 @@ avoid complications when using `mapconcat' with
                            5 (+ (length indent) (length n))
                            (string-join (make-vector (+ (length indent) (length n))
                                                      " "))))))
-        ('etym (lexic--propertize (format "[from %s]" (lexic--parsecar children))
-                           'face 'font-lock-doc-face))
-        ((or 'foreign 'emph) (lexic--xml-propertize children 'face 'italic))
+        ('etym (lexic--add-face (format "[from %s]" (lexic--parsecar children))
+                                'font-lock-doc-face))
+        ((or 'foreign 'emph) (lexic--xml-add-face children 'italic))
         ('span (if-let ((lang (cdr (assq 'lang tags))))
-                   (lexic--xml-propertize children 'face 'italic)
+                   (lexic--xml-add-face children 'italic)
                  (message "span tags of %s" tags)
                  (lexic--parsecar children)))
         ('hi (if-let ((rend (cdr (assq 'rend tags)))
                       (_ (equal rend "ital")))
-                 (lexic--xml-propertize children 'face 'italic)
+                 (lexic--xml-add-face children 'italic)
                (message "hi tags of %s" tags)
                (lexic--parsecar children)))
-        ('trans (lexic--xml-propertize children 'face '(bold font-lock-constant-face)))
-        ('quote (lexic--propertize (format "“%s”" (lexic--parsecar children))
-                            'face 'italic))
+        ('trans (lexic--xml-add-face children '(bold font-lock-constant-face)))
+        ('quote (lexic--add-face (format "“%s”" (lexic--parsecar children))
+                                 'italic))
         ('br (concat "\n" (lexic--parsecar children)))
         ('style nil)
         ;; ignore and just carry on
         ((or 'body 'cb 'def 'dictionary 'entry 'entryfree 'head 'html 'tr
-            'form 'case)
+             'form 'case)
          (lexic--parsecar children))
         (_
          (message "Unknown node %s, ignoring" node-name)
