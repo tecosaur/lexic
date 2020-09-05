@@ -1990,7 +1990,7 @@ avoid complications when using `mapconcat' with
                     (lexic--propertize it 'face 'font-lock-doc-face)))
         ('a ;; buttonize links
          (require 'browse-url)
-         (let ((link (cdr-safe (assq 'href tags)))
+         (let ((link (cdr (assq 'href tags)))
                (display (lexic--parsecar children)))
            ;; make `display' a button opening `link'
            (add-text-properties 0 (length display)
@@ -2002,12 +2002,12 @@ avoid complications when using `mapconcat' with
                                       'browse-url-data link)
                                 display)
            display))
-        ('sense (let ((level-s (cdr-safe (assq 'level tags)))
-                      (n (cdr-safe (assq 'n tags)))
+        ('sense (let ((level-s (cdr (assq 'level tags)))
+                      (n (cdr (assq 'n tags)))
                       (children (lexic--parsecar children))
 
                       level indent newline?)
-                  ;; sometimes theres an extra space which drives me mad
+                  ;; sometimes theres an extra space that drives me mad
                   ;; (when (= (aref children 0) ?\ )
                   ;;   (setq children (substring children 1)))
                   (when level-s
@@ -2015,29 +2015,30 @@ avoid complications when using `mapconcat' with
                     (when (> level 0)
                       (setq indent (string-join (make-vector level "    "))
                             newline "\n")))
-
-                  (if (and (equal lexic--dict "A Latin Dictionary, Lewis & Short (1879)")
-                           lexic--seen-sense-already)
-                      (setq n (lexic--propertize (concat n ". ")
-                                          'face '(bold font-lock-string-face)))
-                    (setq n nil
-                          indent nil
-                          newline nil))
+                  (when (and (equal lexic--dict "A Latin Dictionary, Lewis & Short (1879)"))
+                    (if lexic--seen-sense-already
+                        (setq n (lexic--propertize (concat n ". ")
+                                                   'face '(bold font-lock-string-face)))
+                      (setq n nil
+                            indent nil
+                            newline nil)))
                   (setq lexic--seen-sense-already t)
                   (concat newline indent n
                           (lexic-format-reflow-text
-                           children (- 80 (length indent))
+                           ;; as we don't yet know the window width, 80 is a
+                           ;; good guess
+                           children 80
                            5 (+ (length indent) (length n))
                            (string-join (make-vector (+ (length indent) (length n))
                                                      " "))))))
         ('etym (lexic--propertize (format "[from %s]" (lexic--parsecar children))
                            'face 'font-lock-doc-face))
         ((or 'foreign 'emph) (lexic--xml-propertize children 'face 'italic))
-        ('span (if-let ((lang (cdr-safe (assq 'lang tags))))
+        ('span (if-let ((lang (cdr (assq 'lang tags))))
                    (lexic--xml-propertize children 'face 'italic)
                  (message "span tags of %s" tags)
                  (lexic--parsecar children)))
-        ('hi (if-let ((rend (cdr-safe (assq 'rend tags)))
+        ('hi (if-let ((rend (cdr (assq 'rend tags)))
                       (_ (equal rend "ital")))
                  (lexic--xml-propertize children 'face 'italic)
                (message "hi tags of %s" tags)
@@ -2070,7 +2071,7 @@ https://nikita-moor.github.io/dictionaries/dictionaries.html"
     (pcase lexic--dict
       ;; Lewis (1890) has excessive spacing issues
       ("An Elementary Latin Dictionary, Lewis (1890)"
-       (replace-regexp-in-string "\\([^ ]\\) +" " \\1" formatted))
+       (replace-regexp-in-string "\\([^ ]\\) +" "\\1 " formatted))
       ;; Not sure how mutch of a problem this formatting is with Lewis & Short,
       ;; lets keep it commented for now
       ;; ("A Latin Dictionary, Lewis & Short (1879)"
