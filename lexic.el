@@ -1937,16 +1937,27 @@ https://nikita-moor.github.io/dictionaries/dictionaries/Appleton1914.html"
             (progn (string-match "<def>\\(.*?\\)</def>" s)
                    (match-string 1 s)))))
 
-(defsubst lexic--add-face (string face)
-  "Apply property PROP of VALUE to STRING, preserving and prioritizisg previous properties.
 
-Warning: modifies STRING."
-  (add-face-text-property 0 (length string) face 'append string)
-  string)
+(defmacro lexic--track-range (&rest body)
+  "Return a cons of point before and point after the evaluation of BODY."
+  `(cons
+    (point)
+    (progn ,@body (point))))
+
+(defsubst lexic--add-face (range face)
+  "Apply property PROP of VALUE to RANGE (a (start . end) cons) in the current buffer.
+
+As opposed to `add-text-properties', this preserves and
+prioretizes previous properties."
+  (add-face-text-property (car range) (cdr range) face 'append)
+  range)
 
 (defsubst lexic--parsecar (children)
-  "Format xml nodes CHILDREN and concat the results."
-  (mapconcat #'lexic-format-latin-xml children ""))
+  "Format xml nodes CHILDREN into the buffer.
+
+Return the range including the new children."
+  (lexic--track-range
+   (mapc #'lexic-format-latin-xml children)))
 
 (defsubst lexic--xml-add-face (children face)
   "Format xml nodes CHILDREN and apply a text property PROP of VALUE to the result."
@@ -1954,7 +1965,7 @@ Warning: modifies STRING."
 
 (defsubst lexic--xml-handle-string (string)
   "Handle base case of a string leaf in an html dom."
-  string)
+  (lexic--track-range (insert string)))
 
 (defvar lexic--seen-sense-already nil
   "Did we already parse a `sense' tag in the current run of
@@ -1984,33 +1995,36 @@ avoid complications when using `mapconcat' with
         ((or 'gramgrp 'pos 'itype)
          (lexic--xml-add-face children '(bold font-lock-keyword-face)))
         ('cit (lexic--xml-add-face children 'font-lock-keyword-face))
-        ('gen (pcase (car children)
-                ("m" "male")
-                ("f" "female")
-                ("n" "neutral")))
+        ('gen (lexic--track-range
+               (pcase (car children)
+                 ("m" (insert "male"))
+                 ("f" (insert "female"))
+                 ("n" (insert "neutral"))
+                 (_ (progn (message "unknown gender %s" children)
+                           (lexic--parsecar children))))))
         ((or 'author 'usg) (lexic--xml-add-face children 'font-lock-doc-face))
-        ('bibl (--> (lexic--parsecar children)
-                    (format "(%s)" it)
-                    (lexic--add-face it 'font-lock-doc-face)))
+        ('bibl (lexic--add-face (lexic--track-range
+                                 (insert "(")
+                                 (lexic--parsecar children)
+                                 (insert ")"))
+                                'font-lock-doc-face))
         ('a ;; buttonize links
          (require 'browse-url)
          (let ((link (cdr (assq 'href tags)))
                (display (lexic--parsecar children)))
            ;; make `display' a button opening `link'
-           (add-text-properties 0 (length display)
+           (add-text-properties (car display) (cdr display)
                                 (list 'help-echo link
                                       'keymap browse-url-button-map
                                       'face 'link
                                       'button t
                                       'category 'browse-url
-                                      'browse-url-data link)
-                                display)
+                                      'browse-url-data link))
+           ;; range doesn't change
            display))
-        ('sense (let ((level-s (cdr (assq 'level tags)))
-                      (n (cdr (assq 'n tags)))
-                      (children (lexic--parsecar children))
-
-                      level indent newline)
+        ('sense (let* ((level-s (cdr (assq 'level tags)))
+                       (n (cdr (assq 'n tags)))
+                       (level "") (indent "") (newline ""))
                   ;; sometimes theres an extra space that drives me mad
                   ;; (when (= (aref children 0) ?\ )
                   ;;   (setq children (substring children 1)))
@@ -2020,22 +2034,23 @@ avoid complications when using `mapconcat' with
                       (setq indent (string-join (make-vector level "    "))
                             newline "\n")))
                   (if (and (equal lexic--dict "A Latin Dictionary, Lewis & Short (1879)")
-                             lexic--seen-sense-already)
-                      (setq n (lexic--add-face (concat n ". ")
-                                               '(bold font-lock-string-face)))
-                    (setq n nil
-                            indent nil
-                            newline nil))
+                           lexic--seen-sense-already)
+                      (setq n (propertize (concat n ". ")
+                                          'face '(bold font-lock-string-face)))
+                    (setq n ""
+                          indent ""
+                          newline ""))
+                  ;; TODO add properties to `n' and detect it as indentation from
+                  ;; adaptive-wrap
                   (setq lexic--seen-sense-already t)
-                  (concat newline indent n
-                          (lexic-format-reflow-text
-                           ;; as we don't yet know the window width, 80 is a
-                           ;; good guess
-                           children 80
-                           5 (+ (length indent) (length n))
-                           (string-join (make-vector (+ (length indent) (length n))
-                                                     " "))))))
-        ('etym (lexic--add-face (format "[from %s]" (lexic--parsecar children))
+                  (lexic--track-range
+                   (mapc #'lexic--xml-handle-string
+                         (list newline indent n))
+                   (lexic--parsecar children))))
+        ('etym (lexic--add-face (lexic--track-range
+                                 (insert "[from ")
+                                 (lexic--parsecar children)
+                                 (insert "]"))
                                 'font-lock-doc-face))
         ((or 'foreign 'emph) (lexic--xml-add-face children 'italic))
         ('span (if-let ((lang (cdr (assq 'lang tags))))
@@ -2048,9 +2063,13 @@ avoid complications when using `mapconcat' with
                (message "hi tags of %s" tags)
                (lexic--parsecar children)))
         ('trans (lexic--xml-add-face children '(bold font-lock-constant-face)))
-        ('quote (lexic--add-face (format "“%s”" (lexic--parsecar children))
+        ('quote (lexic--add-face (lexic--track-range
+                                  (insert "“")
+                                  (lexic--parsecar children)
+                                  (insert "”"))
                                  'italic))
-        ('br (concat "\n" (lexic--parsecar children)))
+        ('br (lexic--xml-handle-string "\n")
+             (lexic--parsecar children))
         ('style nil)
         ;; ignore and just carry on
         ((or 'body 'cb 'def 'dictionary 'entry 'entryfree 'head 'html 'tr
@@ -2071,7 +2090,9 @@ https://nikita-moor.github.io/dictionaries/dictionaries.html"
          (root-node (with-temp-buffer
                       (insert info)
                       (libxml-parse-html-region (point-min) (point-max))))
-         (formatted (lexic-format-latin-xml root-node)))
+         (formatted (with-temp-buffer
+                      (lexic-format-latin-xml root-node)
+                      (buffer-string)))) ; with properties
     (pcase lexic--dict
       ;; Lewis (1890) has excessive spacing issues
       ("An Elementary Latin Dictionary, Lewis (1890)"
