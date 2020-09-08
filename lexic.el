@@ -1952,6 +1952,10 @@ Warning: modifies STRING."
   "Format xml nodes CHILDREN and apply a text property PROP of VALUE to the result."
   (lexic--add-face (lexic--parsecar children) face))
 
+(defsubst lexic--xml-handle-string (string)
+  "Handle base case of a string leaf in an html dom."
+  string)
+
 (defvar lexic--seen-sense-already nil
   "Did we already parse a `sense' tag in the current run of
 `lexic-format-latin-dicts'?
@@ -1972,7 +1976,7 @@ avoid complications when using `mapconcat' with
 
 (defun lexic-format-latin-xml (node)
   (if (stringp node)
-      node
+      (lexic--xml-handle-string node)
     ;; (message "node-name: %s" (car node))
     (cl-destructuring-bind (node-name tags . children) node
       (pcase node-name
