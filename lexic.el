@@ -2025,7 +2025,7 @@ avoid complications when using `mapconcat' with
            ;; range doesn't change
            display))
         ('sense (let* ((level-s (cdr (assq 'level tags)))
-                       (n (cdr (assq 'n tags)))
+                       (n (or (cdr (assq 'n tags)) ""))
                        (level "") (indent "") (newline ""))
                   ;; sometimes theres an extra space that drives me mad
                   ;; (when (= (aref children 0) ?\ )
@@ -2035,13 +2035,13 @@ avoid complications when using `mapconcat' with
                     (when (> level 0)
                       (setq indent (string-join (make-vector level "    "))
                             newline "\n")))
-                  (if (and (equal lexic--dict "A Latin Dictionary, Lewis & Short (1879)")
-                           lexic--seen-sense-already)
-                      (setq n (propertize (concat n ". ")
-                                          'face '(bold font-lock-string-face)))
-                    (setq n ""
-                          indent ""
-                          newline ""))
+                  (when (equal lexic--dict "A Latin Dictionary, Lewis & Short (1879)")
+                    (if lexic--seen-sense-already
+                        (setq n (propertize (concat n ". ")
+                                            'face '(bold font-lock-string-face)))
+                      (setq n ""
+                            indent ""
+                            newline "")))
                   ;; TODO add properties to `n' and detect it as indentation from
                   ;; adaptive-wrap
                   (setq lexic--seen-sense-already t)
