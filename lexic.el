@@ -2010,7 +2010,7 @@ avoid complications when using `mapconcat' with
                       (n (cdr (assq 'n tags)))
                       (children (lexic--parsecar children))
 
-                      level indent newline?)
+                      level indent newline)
                   ;; sometimes theres an extra space that drives me mad
                   ;; (when (= (aref children 0) ?\ )
                   ;;   (setq children (substring children 1)))
@@ -2019,13 +2019,13 @@ avoid complications when using `mapconcat' with
                     (when (> level 0)
                       (setq indent (string-join (make-vector level "    "))
                             newline "\n")))
-                  (when (and (equal lexic--dict "A Latin Dictionary, Lewis & Short (1879)"))
-                    (if lexic--seen-sense-already
-                        (setq n (lexic--add-face (concat n ". ")
-                                                 '(bold font-lock-string-face)))
-                      (setq n nil
+                  (if (and (equal lexic--dict "A Latin Dictionary, Lewis & Short (1879)")
+                             lexic--seen-sense-already)
+                      (setq n (lexic--add-face (concat n ". ")
+                                               '(bold font-lock-string-face)))
+                    (setq n nil
                             indent nil
-                            newline nil)))
+                            newline nil))
                   (setq lexic--seen-sense-already t)
                   (concat newline indent n
                           (lexic-format-reflow-text
