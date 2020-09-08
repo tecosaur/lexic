@@ -2026,29 +2026,42 @@ avoid complications when using `mapconcat' with
            display))
         ('sense (let* ((level-s (cdr (assq 'level tags)))
                        (n (or (cdr (assq 'n tags)) ""))
-                       (level "") (indent "") (newline ""))
+                       (n-indent "") (level "") (indent "") (newline ""))
                   ;; sometimes theres an extra space that drives me mad
                   ;; (when (= (aref children 0) ?\ )
                   ;;   (setq children (substring children 1)))
                   (when level-s
                     (setq level (string-to-number level-s))
                     (when (> level 0)
-                      (setq indent (string-join (make-vector level "    "))
+                      (setq indent (string-join (make-vector level "  "))
                             newline "\n")))
-                  (when (equal lexic--dict "A Latin Dictionary, Lewis & Short (1879)")
-                    (if lexic--seen-sense-already
-                        (setq n (propertize (concat n ". ")
-                                            'face '(bold font-lock-string-face)))
-                      (setq n ""
-                            indent ""
-                            newline "")))
-                  ;; TODO add properties to `n' and detect it as indentation from
-                  ;; adaptive-wrap
+                  (unless (equal n "")
+                    (setq n (propertize (concat n ". ")
+                                        'face '(bold font-lock-string-face))
+                          n-indent (make-string (length n) ?\ )))
+                  (when (and (equal lexic--dict "A Latin Dictionary, Lewis & Short (1879)")
+                             (not lexic--seen-sense-already))
+                    (setq n ""
+                          n-indent ""
+                          indent ""
+                          newline ""))
                   (setq lexic--seen-sense-already t)
                   (lexic--track-range
-                   (mapc #'lexic--xml-handle-string
-                         (list newline indent n))
-                   (lexic--parsecar children))))
+                   (insert newline indent)
+                   (let* ((n-indent-beg (point-marker))
+                          (_ (insert n-indent))
+                          (n-indent-end (point-marker)))
+                     (let ((range (lexic--parsecar children)))
+                       (when (equal lexic--dict "An Elementary Latin Dictionary, Lewis (1890)")
+                         ;; Lewis 1890 tends to include `n' in the text as well.
+                         ;; Get rid of it!
+                         (goto-char (car range))
+                         (delete-char (length n))
+                         (decf (cdr range) (length n))
+                         (goto-char (cdr range)))
+                       (fill-region (car range) (cdr range)))
+                     (put-text-property n-indent-beg n-indent-end
+                                        'display n)))))
         ('etym (lexic--add-face (lexic--track-range
                                  (insert "[from ")
                                  (lexic--parsecar children)
@@ -2091,19 +2104,10 @@ https://nikita-moor.github.io/dictionaries/dictionaries.html"
          (lexic--seen-sense-already nil)
          (root-node (with-temp-buffer
                       (insert info)
-                      (libxml-parse-html-region (point-min) (point-max))))
-         (formatted (with-temp-buffer
-                      (lexic-format-latin-xml root-node)
-                      (buffer-string)))) ; with properties
-    (pcase lexic--dict
-      ;; Lewis (1890) has excessive spacing issues
-      ("An Elementary Latin Dictionary, Lewis (1890)"
-       (replace-regexp-in-string "\\([^ ]\\) +" "\\1 " formatted))
-      ;; Not sure how mutch of a problem this formatting is with Lewis & Short,
-      ;; lets keep it commented for now
-      ;; ("A Latin Dictionary, Lewis & Short (1879)"
-      ;;  (replace-regexp-in-string "\\(^ *[A-Z]. \\) " " \\1" formatted))
-      (_ formatted))))
+                      (libxml-parse-html-region (point-min) (point-max)))))
+    (with-temp-buffer
+      (lexic-format-latin-xml root-node)
+      (buffer-string))))
 
 ;;;;##################################################################
 ;;;;  User Options, Variables
