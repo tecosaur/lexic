@@ -1997,9 +1997,10 @@ avoid complications when using `mapconcat' with
         ('cit (lexic--xml-add-face children 'font-lock-keyword-face))
         ('gen (lexic--track-range
                (pcase (car children)
-                 ("m" (insert "male"))
-                 ("f" (insert "female"))
-                 ("n" (insert "neutral"))
+                 ;; TODO replace with latin gender translations?
+                 ((or "m" "m.") (insert "male"))
+                 ((or "f" "f.") (insert "female"))
+                 ((or "n" "n.") (insert "neutral"))
                  (_ (progn (message "unknown gender %s" children)
                            (lexic--parsecar children))))))
         ((or 'author 'usg) (lexic--xml-add-face children 'font-lock-doc-face))
