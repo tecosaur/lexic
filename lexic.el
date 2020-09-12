@@ -1976,7 +1976,7 @@ Ideally this would be given as an argument to
 avoid complications when using `mapconcat' with
 `lexic-format-latin-xml'.")
 
-(defvar lexic--indent nil
+(defvar lexic--indent ""
 "Current indentation level in lexic-format-latin-dicts.
 
 Ideally this would be given as an argument to
@@ -2067,7 +2067,7 @@ avoid complications when using `mapconcat' with
                          ;; Get rid of it!
                          (goto-char (car range))
                          (delete-char (length n))
-                         (decf (cdr range) (length n))
+                         (cl-decf (cdr range) (length n))
                          (goto-char (cdr range)))
                        (fill-region (car range) (cdr range) 'full t))
                      (put-text-property n-indent-beg n-indent-end
