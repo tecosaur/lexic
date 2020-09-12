@@ -2069,7 +2069,7 @@ avoid complications when using `mapconcat' with
                          (delete-char (length n))
                          (decf (cdr range) (length n))
                          (goto-char (cdr range)))
-                       (fill-region (car range) (cdr range)))
+                       (fill-region (car range) (cdr range) 'full t))
                      (put-text-property n-indent-beg n-indent-end
                                         'display n)))))
         ('etym (lexic--add-face (lexic--track-range
