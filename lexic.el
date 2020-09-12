@@ -1976,6 +1976,14 @@ Ideally this would be given as an argument to
 avoid complications when using `mapconcat' with
 `lexic-format-latin-xml'.")
 
+(defvar lexic--indent nil
+"Current indentation level in lexic-format-latin-dicts.
+
+Ideally this would be given as an argument to
+`lexic-format-latin-xml' - it's kept in this dynamic binding to
+avoid complications when using `mapconcat' with
+`lexic-format-latin-xml'.")
+
 (defvar lexic--dict nil
 "The current dict being worked on in `lexic-format-latin-dicts'.
 
@@ -2026,7 +2034,8 @@ avoid complications when using `mapconcat' with
            display))
         ('sense (let* ((level-s (cdr (assq 'level tags)))
                        (n (or (cdr (assq 'n tags)) ""))
-                       (n-indent "") (level "") (indent "") (newline ""))
+                       (level 0)
+                       (n-indent "") (indent "") (newline ""))
                   ;; sometimes theres an extra space that drives me mad
                   ;; (when (= (aref children 0) ?\ )
                   ;;   (setq children (substring children 1)))
@@ -2039,8 +2048,9 @@ avoid complications when using `mapconcat' with
                     (setq n (propertize (concat n ". ")
                                         'face '(bold font-lock-string-face))
                           n-indent (make-string (length n) ?\ )))
-                  (when (and (equal lexic--dict "A Latin Dictionary, Lewis & Short (1879)")
-                             (not lexic--seen-sense-already))
+                  (when (or (= level 0)
+                            (and (equal lexic--dict "A Latin Dictionary, Lewis & Short (1879)")
+                                 (not lexic--seen-sense-already)))
                     (setq n ""
                           n-indent ""
                           indent ""
@@ -2083,7 +2093,8 @@ avoid complications when using `mapconcat' with
                                   (lexic--parsecar children)
                                   (insert "”"))
                                  'italic))
-        ('br (lexic--xml-handle-string "\n")
+        ;; keep indentation in line breaks
+        ('br (insert "\n\n" lexic--indent)
              (lexic--parsecar children))
         ('style nil)
         ;; ignore and just carry on
