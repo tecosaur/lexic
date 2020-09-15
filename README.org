@@ -8,8 +8,8 @@ proliferated and become quite useful, and there are some nice packages available
 like [[https://github.com/abo-abo/define-word][define-word]] which make use of such online resources.
 
 However, the quicker I can know more about the words I'm using, the better!
-Offline dictionaries are obviously the way to go then. StarDict and its
-predecessor Dict, are the open-source standards for dictionary network
+Offline dictionaries are obviously the way to go then. [[https://owenh.net/stardict][StarDict]] and its
+predecessor [[Dict][Dict]], are the open-source standards for dictionary network
 protocols. The Console implementation of StarDict already has a package or two
 for Emacs which I can build off.
 
@@ -102,8 +102,8 @@ From there it could be nice to allow for combination of multiple tools (e.g.
      The venerable [[https://public.oed.com/about/][Oxford English Dictionary 2nd Ed.]] is located here.
    
    Once you have downloaded your dictionary, the default location sdcv expects
-   to find your local dictionaries is =/$HOME/.stardict/dic/=. In older versions
-   of the software it was =/usr/share/stardict/dic/=.
+   to find your local dictionaries is =/$HOME/.stardict/dic/=. System versions of
+   dictionaries are expected to be in =/usr/share/stardict/dic/=.
    
    If the downloaded dictionary is a .bz2 file:
    
