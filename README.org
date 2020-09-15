@@ -30,10 +30,10 @@ From there it could be nice to allow for combination of multiple tools (e.g.
   - For those that believe a dictionary can *only* be used to look up words you
     don't already know...
   - For those who have yet to see the downsides with online, free, dictionaries
-    (a fair number being derivations of Wordnet[fn:1])...
+    (a fair number being derivations of Wordnet, see footnotes)...
 
   This excellent essay should disabuse you:
-  [[http://jsomers.net/blog/dictionary][You’re probably using the wrong dictionary « the jsomers.net blog]][fn:2] 
+  [[http://jsomers.net/blog/dictionary][You’re probably using the wrong dictionary « the jsomers.net blog]]
 
   What follows is brief survey of the state of dictionary packages on MELPA
 
@@ -103,7 +103,7 @@ From there it could be nice to allow for combination of multiple tools (e.g.
    
    Once you have downloaded your dictionary, the default location sdcv expects
    to find your local dictionaries is =/$HOME/.stardict/dic/=. In older versions
-   of the software it was =/usr/share/stardict/dic/= [fn:3].
+   of the software it was =/usr/share/stardict/dic/=.
    
    If the downloaded dictionary is a .bz2 file:
    
@@ -176,16 +176,12 @@ Beyond =lexic-search= there exists,
 
 * Footnotes
 
-[fn:1] [[https://wordnet.princeton.edu/related-projects][List of Wordnet projects.]] As a medieval Thomist would say: Abusus non
-tollit usum. It is obvious from the outset, [[https://medium.com/broken-window/the-power-of-wordnet-with-nltk-7c45b20f52cf][wordnet was made to be usable
-primarily by machines.]] If we follow the money, it leads us to the same
-conclusion. Funding for the project [[https://en.wikipedia.org/wiki/WordNet#History_and_team_members][includes a litany of government agencies:]]
-U.S. Office of Naval Research, DARPA, the National Science Foundation, the
-Disruptive Technology Office etc. Against those who argue for the pedagogical
-value, it should be noted that advanced learner's and collocation dictionaries
-are more enriching and better suited.
+[fn:1] [[https://wordnet.princeton.edu/related-projects][List of Wordnet projects.]] Abusus non tollit usum. It is obvious from the
+outset, [[https://medium.com/broken-window/the-power-of-wordnet-with-nltk-7c45b20f52cf][wordnet was made to be usable primarily by machines.]] If we follow the
+money, it leads us to the same conclusion. Funding for the project [[https://en.wikipedia.org/wiki/WordNet#History_and_team_members][includes a
+litany of government agencies:]] U.S. Office of Naval Research, DARPA, the
+National Science Foundation, the Disruptive Technology Office etc. Against those
+who argue for the pedagogical value, it should be noted that advanced learner's
+and collocation dictionaries are more enriching and better suited.
 
-[fn:2] [[https://news.ycombinator.com/item?id=7772557][Hacker News Discussion (2014)]]
-
-[fn:3] [[https://askubuntu.com/questions/191125/is-there-an-offline-command-line-dictionary/191268#191268][software recommendation - Is there an offline command-line dictionary? -
-Ask ...]]
+[fn:2] [[https://news.ycombinator.com/item?id=7772557][Hacker News Discussion on Somer's Article (2014)]]
