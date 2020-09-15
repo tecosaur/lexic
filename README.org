@@ -8,9 +8,10 @@ proliferated and become quite useful, and there are some nice packages available
 like [[https://github.com/abo-abo/define-word][define-word]] which make use of such online resources.
 
 However, the quicker I can know more about the words I'm using, the better!
-Offline dictionaries are obviously the way to go then, and the Console
-implementation of StarDict already has a package or two for Emacs which I can
-build off.
+Offline dictionaries are obviously the way to go then. StarDict and its
+predecessor Dict, are the open-source standards for dictionary network
+protocols. The Console implementation of StarDict already has a package or two
+for Emacs which I can build off.
 
 However, I'd like to really focus on the words, and making it easy and intuitive
 as possible to gain a greater understanding of the words and phrases we use.
@@ -22,35 +23,169 @@ tools among other backends (such as any future GoldenDict CLI).
 From there it could be nice to allow for combination of multiple tools (e.g.
 =sdcv= + online service).
 
-This has rich support for the following dictionaries:
- + [[http://download.huzheng.org/dict.org/stardict-dictd-web1913-2.4.2.tar.bz2][Webster's Revised Unabridged Dictionary (1913)]]
- + [[https://packages.debian.org/sid/dict-gcide][GCIDE]] (with conversion from dict to StarDict)
- + [[http://download.huzheng.org/bigdict/stardict-Soule_s_Dictionary_of_English_Synonyms-2.4.2.tar.bz2][Soule's Dictionary of English Synonyms]]
- + [[http://download.huzheng.org/dict.org/stardict-dictd_www.dict.org_elements-2.4.2.tar.bz2][Elements Database]]
- + [[https://github.com/tuxor1337/dictmaster][Douglas Harper's Online Etymology Dictionary]]
+* Background
+  It's only natural if one does all their text-editing in Emacs to want a
+  dictionary at hand, and quickly.
+  
+  - For those that believe a dictionary can *only* be used to look up words you
+    don't already know...
+  - For those who have yet to see the downsides with online, free, dictionaries
+    (a fair number being derivations of Wordnet[fn:1])...
 
-If there's something you feel is missing, feel free to make an issue --- or even
-better, a PR!
+  This excellent essay should disabuse you:
+  [[http://jsomers.net/blog/dictionary][You’re probably using the wrong dictionary « the jsomers.net blog]][fn:2] 
+
+  What follows is brief survey of the state of dictionary packages on MELPA
+
+  + define-word.el
+    - Simple package, already part of some emacs starter frameworks, i.e.
+      Spacemacs
+    - Offers the smallest dictionary selection (should you want a different
+      aggregation of dictionaries than wordNik)
+    - [[https://oremacs.com/2015/05/22/define-word/][Designed to work with online dictionaries for the most part,]] results are
+      displayed in the minibuffer
+    
+  + dictionary.el 
+    - Proven package, mature and stable, works "out of the box"
+    - If you are okay with being online to look up words and do not want an
+      offline dictionary
+    - If you are okay with the selection of dictionaries used by the server
+      dict.org
+    - These two qualifications do not apply if you take the time to setup your
+      own dictd server and modify dictionary.el to use your local server
+    
+  + helm-dictionary.el
+    - Integration with Helm
+    - Uses the offline =.ding= dictionary format. Includes fallback to online
+      dictionaries
+    - [[https://github.com/emacs-helm/helm-dictionary/issues/21][Does not support the more standard .dict format.]] Could not locate a .dict
+      to .ding converter
+  
+  + lexic.el (successor to [[https://github.com/pluskid/sdcv-mode/blob/master/sdcv-mode.el][sdcv-mode.el]] and [[https://github.com/gucong/emacs-sdcv][sdcv.el]]) N.b. sdcv.el is the package
+    that is refereed to in [[https://irreal.org/blog/?p=9189][The Webster 1913 Dictionary | Irreal]]
+    - Supports easy conversion of .dict files to .dic format. Big selection of
+      .dic dictionaries already available
+    - Designed for those who desire to query multiple dictionaries/thesauri
+      offline with minimal config and no server
+    - Good formatting support for certain dictionaries
+    
+  Packages that are OS-specific (osx-dictionary for Mac users), meant for
+  spell-checking, auto-completion, or are language-specific were not included.
+
+  After some usage, it can be said that for *querying a customized list of
+  multiple dictionaries offline*, lexic.el offers the best experience with the
+  least setup.
 
 * Requirements
-+ The command line stardict tool =sdcv= (support for other backends is planned)
++ The command line stardict tool [[https://github.com/Dushistov/sdcv][sdcv]] (support for other backends is planned).
 + (/optional/) ~visual-fill-column-mode~
 
-* Configuration
+* Installation
+1. Lexic.el is on MELPA, and can alternatively be installed by placing the
+   package on your load-path.
+
+   #+begin_src emacs-lisp
+   (require 'lexic-mode)
+   (global-set-key (kbd "C-c d") 'lexic-search)
+   #+end_src
+   
+2. Dictionary (Thesaurus) download
+
+   Index list of =.dic= dictionaries from the StarDict developer is located here:
+   [[http://download.huzheng.org/][StarDict Dictionaries]].
+   
+   Of particular interest,
+   - [[http://download.huzheng.org/dict.org/][dictd-www.dict.org Dictionaries]]
+     Websters 1913 unabridged is located here.
+   - [[http://download.huzheng.org/freedict.de/][dictd-www.freedict.de Dictionaries]]
+   - [[http://download.huzheng.org/bigdict/][Big dictionaries]]
+     The venerable [[https://public.oed.com/about/][Oxford English Dictionary 2nd Ed.]] is located here.
+   
+   Once you have downloaded your dictionary, the default location sdcv expects
+   to find your local dictionaries is =/$HOME/.stardict/dic/=. In older versions
+   of the software it was =/usr/share/stardict/dic/= [fn:3].
+   
+   If the downloaded dictionary is a .bz2 file:
+   
+   #+begin_src bash
+   sudo tar -xvjf downloaded.tar.bz2 -C ~/.stardict/dic/
+   #+end_src
+   
+   If the downloaded dictionary is a .gz file:
+   
+   #+begin_src bash
+   sudo tar -xvzf downloaded.tar.gz -C ~/.stardict/dic/
+   #+end_src
+   
+   You can test your sdcv installation at this point in the terminal with
+   
+   #+begin_src bash
+   sdcv word
+   #+end_src
+   
+3. Construct lexic-dictionary-specs
+
+   Make the dictionary known to lexic.el. Now inside the newly extracted
+   directory (you may need to give yourself read/write permissions) will be the
+   =.ifo= file.
+
+   In order to recognise format one of the supported dictionaries, Lexic matches
+   the =bookname== parameter from the StarDict =.ifo= file against the entries in
+   ~lexic-dictionary-specs~. Lexic needs to do this, because formatting is
+   inconsistent, and so must be implemented on a per-dictionary basis.
+   
+   For example, if I downloaded a copy of /Soule's English Synonyms/, I'd need to
+   make sure that the =SoulesSynonymns.ifo= file contains the line
+   ~bookname=Soule's Dictionary of English Synonyms~. Check the value of
+   ~lexic-dictionary-specs~ to see what it expects for other dictionaries
+   supported by default.
+   
+   Then, if I open a new Emacs session, and look for a synonym I should see it
+   formatted nicely 🙂.
+   
+   *Important:* dictionaries *DO NOT* need to have a format function. You can most
+    definitely use the dictionary without. i.e.
+   #+begin_src emacs-lisp
+     (setq lexic-dictionary-specs '("Hitchcock's Bible Names
+     Dictionary" :short "Hitcchcock's Bible Names" :priority 3))
+   #+end_src
+   
+   The currently pre-defined format functions are for:
+    + [[http://download.huzheng.org/dict.org/stardict-dictd-web1913-2.4.2.tar.bz2][Webster's Revised Unabridged Dictionary (1913)]] =(lexic-format-webster)=
+    + [[https://packages.debian.org/sid/dict-gcide][GCIDE]] (with conversion from dict to StarDict) =(lexic-format-webster)=
+    + [[http://download.huzheng.org/bigdict/stardict-Soule_s_Dictionary_of_English_Synonyms-2.4.2.tar.bz2][Soule's Dictionary of English Synonyms]] =(lexic-format-soule)=
+    + [[http://download.huzheng.org/dict.org/stardict-dictd_www.dict.org_elements-2.4.2.tar.bz2][Elements Database]] =(lexic-format-element)=
+    + [[https://github.com/tuxor1337/dictmaster][Douglas Harper's Online Etymology Dictionary]] =(lexic-format-online-eytm)=
+   
+   If there's something you feel is missing, feel free to make an issue --- or
+   even better, a PR!
+   
+* Configuration & Usage
 If you happen to use Doom, you may find [[https://tecosaur.github.io/emacs-config/config.html#dictionary][this section]] of my config interesting.
 
-In order to recognise format one of the supported dictionaries, Lexic
-matches the =bookname== parameter from the StarDict =.ifo= file against the entries
-in ~lexic-dictionary-specs~. Lexic needs to do this, because formatting is
-inconsistent, and so must be implemented on a per-dictionary basis.
+Beyond =lexic-search= there exists,
 
-For example, if I downloaded a copy of /Soule's English Synonyms/, I'd need to
-make sure that the =SoulesSynonymns.ifo= file contains the line ~bookname=Soule's
-Dictionary of English Synonyms~. Check the value of ~lexic-dictionary-specs~ to see
-what it expects for other dictionaries supported by default.
-
-Then, if I open a new Emacs session, and look for a synonym I should see it
-formatted nicely 🙂.
+1. The command =lexic-search-word-at-point= 
+2. Toggling and folding of entries. Lexic.el uses outline.el (think org-mode).
+   See =outline-show-all= etc. under =lexic-mode-map=
+3. Search history with =lexic-search-history-backwards= and
+   =lexic-search-history-forwards=
 
 * Demo
 [[https://tecosaur.com/lfs/lexic/lexic.gif]]
+
+* Footnotes
+
+[fn:1] [[https://wordnet.princeton.edu/related-projects][List of Wordnet projects.]] As a medieval Thomist would say: Abusus non
+tollit usum. It is obvious from the outset, [[https://medium.com/broken-window/the-power-of-wordnet-with-nltk-7c45b20f52cf][wordnet was made to be usable
+primarily by machines.]] If we follow the money, it leads us to the same
+conclusion. Funding for the project [[https://en.wikipedia.org/wiki/WordNet#History_and_team_members][includes a litany of government agencies:]]
+U.S. Office of Naval Research, DARPA, the National Science Foundation, the
+Disruptive Technology Office etc. Against those who argue for the pedagogical
+value, it should be noted that advanced learner's and collocation dictionaries
+are more enriching and better suited.
+
+[fn:2] [[https://news.ycombinator.com/item?id=7772557][Hacker News Discussion (2014)]]
+
+[fn:3] [[https://askubuntu.com/questions/191125/is-there-an-offline-command-line-dictionary/191268#191268][software recommendation - Is there an offline command-line dictionary? -
+Ask ...]]
