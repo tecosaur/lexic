@@ -2048,39 +2048,44 @@ avoid complications when using `mapconcat' with
                   ;; sometimes theres an extra space that drives me mad
                   ;; (when (= (aref children 0) ?\ )
                   ;;   (setq children (substring children 1)))
-                  (when level-s
-                    (setq level (string-to-number level-s))
-                    (when (> level 0)
-                      (setq indent (string-join (make-vector level "  "))
-                            newline "\n")))
-                  (unless (equal n "")
-                    (setq n (propertize (concat n ". ")
-                                        'face '(bold font-lock-string-face))
-                          n-indent (make-string (length n) ?\ )))
-                  (when (or (= level 0)
-                            (and (equal lexic--dict "A Latin Dictionary, Lewis & Short (1879)")
-                                 (not lexic--seen-sense-already)))
-                    (setq n ""
-                          n-indent ""
-                          indent ""
-                          newline ""))
-                  (setq lexic--seen-sense-already t)
-                  (lexic--track-range
-                   (insert newline indent)
-                   (let* ((n-indent-beg (point-marker))
-                          (_ (insert n-indent))
-                          (n-indent-end (point-marker)))
-                     (let ((range (lexic--parsecar children)))
-                       (when (equal lexic--dict "An Elementary Latin Dictionary, Lewis (1890)")
+                  (if (equal lexic--dict "Hand-book of Latin Synonymes, Döderlein (1875)")
+                      (setq level 1
+                            n "- ")
+                    (setq level (string-to-number level-s)
+                          n (concat n ". ")))
+                  (setq n (propertize n 'face '(bold font-lock-string-face))
+                        n-indent (make-string (length n) ?\ ))
+                  (if (= level 0)
+                      (lexic--parsecar children)
+                    (setq indent (string-join (make-vector level "  "))
+                          newline "\n")
+                    ;; I don't remember what this branch was for anymore but it doesn't seem to hurt
+                    (when (and (equal lexic--dict "A Latin Dictionary, Lewis & Short (1879)")
+                               (not lexic--seen-sense-already))
+                      (setq n ""
+                            n-indent ""
+                            indent ""
+                            newline ""))
+                    (setq lexic--seen-sense-already t)
+                    (lexic--track-range
+                     (insert newline indent)
+                     (let* ((lexic--indent (concat indent n-indent))
+                            (n-indent-beg (point-marker))
+                            (_ (insert n-indent))
+                            (n-indent-end (point-marker)))
+                       (let ((range (lexic--parsecar children)))
                          ;; Lewis 1890 tends to include `n' in the text as well.
                          ;; Get rid of it!
-                         (goto-char (car range))
-                         (delete-char (length n))
-                         (cl-decf (cdr range) (length n))
-                         (goto-char (cdr range)))
-                       (fill-region (car range) (cdr range) 'full t))
-                     (put-text-property n-indent-beg n-indent-end
-                                        'display n)))))
+                         (when (and (equal lexic--dict "An Elementary Latin Dictionary, Lewis (1890)")
+                                    (equal (buffer-substring-no-properties (car range) (+ (car range) (length n)))
+                                           n))
+                           (goto-char (car range))
+                           (delete-char (length n))
+                           (cl-decf (cdr range) (length n))
+                           (goto-char (cdr range)))
+                         (fill-region (car range) (cdr range) 'full t))
+                       (put-text-property n-indent-beg n-indent-end
+                                          'display n))))))
         ('etym (lexic--add-face (lexic--track-range
                                  (insert "[from ")
                                  (lexic--parsecar children)
