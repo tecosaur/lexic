@@ -2092,7 +2092,11 @@ avoid complications when using `mapconcat' with
                  (lexic--xml-add-face children 'italic)
                (message "hi tags of %s" tags)
                (lexic--parsecar children)))
-        ('trans (lexic--xml-add-face children '(bold font-lock-constant-face)))
+        ('trans (lexic--track-range
+                 ;; ensure space before (idk, but it happens)
+                 (unless (or (bolp) (= (char-before) ?\ ))
+                   (insert " "))
+                 (lexic--xml-add-face children '(bold font-lock-constant-face))))
         ('quote (lexic--add-face (lexic--track-range
                                   (insert "“")
                                   (lexic--parsecar children)
