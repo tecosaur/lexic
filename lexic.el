@@ -2040,7 +2040,11 @@ avoid complications when using `mapconcat' with
         ('sense (let* ((level-s (cdr (assq 'level tags)))
                        (n (or (cdr (assq 'n tags)) ""))
                        (level 0)
-                       (n-indent "") (indent "") (newline ""))
+                       ;; normal indent
+                       (indent "")
+                       ;;  indent that would be displayed as `n' with a text property
+                       (n-indent "")
+                       (newline ""))
                   ;; sometimes theres an extra space that drives me mad
                   ;; (when (= (aref children 0) ?\ )
                   ;;   (setq children (substring children 1)))
