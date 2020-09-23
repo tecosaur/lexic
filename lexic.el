@@ -2000,7 +2000,12 @@ avoid complications when using `mapconcat' with
     ;; (message "node-name: %s" (car node))
     (cl-destructuring-bind (node-name tags . children) node
       (pcase node-name
-        ((or 'b 'orth) (lexic--xml-add-face children 'bold))
+        ('b (lexic--xml-add-face children 'bold))
+        ('orth (lexic--track-range
+                (lexic--xml-add-face children 'bold)
+                (when (equal lexic--dict
+                             "Hand-book of Latin Synonymes, Döderlein (1875)")
+                  (insert "\n"))))
         ((or 'gramgrp 'pos 'itype)
          (lexic--xml-add-face children '(bold font-lock-keyword-face)))
         ('cit (lexic--xml-add-face children 'font-lock-keyword-face))
