@@ -1,6 +1,5 @@
 #+TITLE: Emacs Lexical Information Viewer
 #+AUTHOR: tecosaur
-#+DATE: July 29, 2020
 
 It's nice to know more about the words you're using. Online dictionaries have
 proliferated and become quite useful, and there are some nice packages available
@@ -31,6 +30,16 @@ This has rich support for the following dictionaries:
 If there's something you feel is missing, feel free to make an issue --- or even
 better, a PR!
 
+* Requirements
++ The command line stardict tool =sdcv= (support for other backends is planned)
++ (/optional/) ~visual-fill-column-mode~
+
+* Configuration
 If you happen to use Doom, you may find [[https://tecosaur.github.io/emacs-config/config.html#lexic][this section]] of my config interesting.
 
+To set up Lexic to work with your installed dictionaries you want to look at the
+~lexic-dictionary-specs~ variable which formats results based on the =bookname=
+parameter of the =sdcv= dictionary's =.ifo= file.
+
+* Demo
 [[https://tecosaur.com/lfs/lexic/lexic.gif]]
