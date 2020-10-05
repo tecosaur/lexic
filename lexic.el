@@ -302,8 +302,13 @@ the beginning of the buffer."
     (setq buffer-read-only nil)
     (lexic-parse-failed)
     (setq buffer-read-only t)
-    (when (< 30 (count-lines (point-min) (point-max)))
-        (outline-hide-sublevels 3))
+
+    (let* ((window (get-buffer-window (lexic-get-buffer)))
+           (win-height (window-height window))
+           (content-height (count-lines (point-min) (point-max))))
+      (when (> 0.5 (/ (float win-height) content-height))
+        (outline-hide-sublevels 3)))
+
     (goto-char (point-min))
     (search-forward "\u200B\u200B")
     (left-char 1)))
