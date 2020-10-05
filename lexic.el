@@ -288,7 +288,11 @@ Turning on Text mode runs the normal hook `lexic-mode-hook'."
                               text-mode-hook)))
   (setq buffer-read-only t)
   (setq-local outline-regexp "\u200B+")
-  (setq-local outline-heading-end-regexp "\u2008"))
+  (setq-local outline-heading-end-regexp "\u2008")
+  (when (require 'visual-fill-column nil t)
+    (setq-local visual-fill-column-center-text t)
+    (visual-fill-column-mode 1)
+    (setq-local display-line-numbers-type nil)))
 
 (defun lexic-mode-reinit ()
   "Re-initialize buffer.
