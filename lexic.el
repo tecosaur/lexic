@@ -1749,7 +1749,7 @@ collected using https://framagit.org/tuxor1337/dictmaster."
                                                                75 5 3 "   "))
                                'face '(italic font-lock-type-face))
                   )))
-       (replace-regexp-in-string "<br/><br/>" "")
+       (replace-regexp-in-string "<br/>\n?<br/>" "\n")
        (replace-regexp-in-string
         "<p>\\(.*?\\)</p>"
         (lambda (match)
@@ -1757,6 +1757,7 @@ collected using https://framagit.org/tuxor1337/dictmaster."
            (lexic-format-reflow-text (match-string 1 match)
                                     80 5)
            "\n")))
+       (replace-regexp-in-string "</?p>" "") ; any straggling pars
        (replace-regexp-in-string
         "^.\\{86,\\}"
         (lambda (match)
