@@ -2062,9 +2062,13 @@ avoid complications when using `mapconcat' with
                   ;; sometimes theres an extra space that drives me mad
                   ;; (when (= (aref children 0) ?\ )
                   ;;   (setq children (substring children 1)))
-                  (if (equal lexic--dict "Hand-book of Latin Synonymes, Döderlein (1875)")
-                      (setq level 1
-                            n "- ")
+                  (if (member lexic--dict
+                              '("Hand-book of Latin Synonymes, Döderlein (1875)"
+                                "Glossarium Anglico-Latinum, Redmond (2005)"))
+                      ;; technically these should be numbered lists and not
+                      ;; bullets but bullets serve the same purpose and are less
+                      ;; complicated
+                      (setq level 1 n "- ")
                     (setq level (string-to-number level-s)
                           n (concat n ". ")))
                   (setq n (propertize n 'face '(bold font-lock-string-face))
