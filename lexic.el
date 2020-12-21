@@ -2150,8 +2150,18 @@ https://nikita-moor.github.io/dictionaries/dictionaries.html"
   (let* ((info (plist-get entry :info))
          (lexic--dict (plist-get entry :dict))
          (lexic--seen-sense-already nil)
+         (formatted
+          (pcase lexic--dict
+            ;; Lewis (1890) has excessive spacing issues
+            ("An Elementary Latin Dictionary, Lewis (1890)"
+             (replace-regexp-in-string " \\{2,\\}" " " info))
+            ;; Not sure how much of a problem this formatting is with Lewis & Short,
+            ;; lets keep it commented for now
+            ;; ("A Latin Dictionary, Lewis & Short (1879)"
+            ;;  (replace-regexp-in-string "\\(^ *[A-Z]. \\) " " \\1" formatted))
+            ))
          (root-node (with-temp-buffer
-                      (insert info)
+                      (insert formatted)
                       (libxml-parse-html-region (point-min) (point-max)))))
     (with-temp-buffer
       (lexic-format-latin-xml root-node)
