@@ -739,11 +739,11 @@ entry. EXPECTED-WORD is the word expected in ENTRY."
      :short "Synonyms"
      :formatter lexic-format-soule
      :priority 5)
-    ("A Latin Dictionary, Lewis & Short (1879)"
-     :short "Latin English [Lewis & Short]"
-     :formatter lexic-format-latin-dicts :priority 6)
     ("An Elementary Latin Dictionary, Lewis (1890)"
      :short "Latin English [Lewis]"
+     :formatter lexic-format-latin-dicts :priority 6)
+    ("A Latin Dictionary, Lewis & Short (1879)"
+     :short "Latin English [Lewis & Short]"
      :formatter lexic-format-latin-dicts :priority 7)
     ("Index verbōrum, Appleton (1914)"
      :short "Latin English Synonyms [Döderlein]"
