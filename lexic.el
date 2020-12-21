@@ -2037,6 +2037,20 @@ avoid complications when using `mapconcat' with
                                       'browse-url-data link))
            ;; range doesn't change
            display))
+        ('abbr ; set echo-area to the abbrev expansion
+         (require 'browse-url)
+         (let ((title (cdr (assq 'title tags)))
+               (display (lexic--parsecar children)))
+           (add-text-properties (car display) (cdr display)
+                                ;; FIXME something better then echo-area? like eldoc?
+                                (list 'help-echo title
+                                      ;; FIXME this doesn't work
+                                      'underline (face-attribute 'font-lock-doc-face
+                                                                 :foreground)
+                                      'face 'italic))
+           ;; range doesn't change
+           display))
+
         ('sense (let* ((level-s (cdr (assq 'level tags)))
                        (n (or (cdr (assq 'n tags)) ""))
                        (level 0)
