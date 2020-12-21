@@ -2003,6 +2003,7 @@ avoid complications when using `mapconcat' with
         ('b (lexic--xml-add-face children 'bold))
         ('orth (lexic--track-range
                 (lexic--xml-add-face children 'bold)
+                ;; Doderlein uses orth to line break
                 (when (equal lexic--dict
                              "Hand-book of Latin Synonymes, Döderlein (1875)")
                   (insert "\n"))))
@@ -2023,7 +2024,7 @@ avoid complications when using `mapconcat' with
                                  (lexic--parsecar children)
                                  (insert ")"))
                                 'font-lock-doc-face))
-        ('a ;; buttonize links
+        ('a ; buttonize links
          (require 'browse-url)
          (let ((link (cdr (assq 'href tags)))
                (display (lexic--parsecar children)))
@@ -2109,7 +2110,7 @@ avoid complications when using `mapconcat' with
                                  (lexic--parsecar children)
                                  (insert "]"))
                                 'font-lock-doc-face))
-        ((or 'foreign 'emph) (lexic--xml-add-face children 'italic))
+        ((or 'foreign 'emph 'number) (lexic--xml-add-face children 'italic))
         ('span (if-let ((lang (cdr (assq 'lang tags))))
                    (lexic--xml-add-face children 'italic)
                  (message "span tags of %s" tags)
@@ -2134,8 +2135,8 @@ avoid complications when using `mapconcat' with
              (lexic--parsecar children))
         ('style nil)
         ;; ignore and just carry on
-        ((or 'body 'cb 'def 'dictionary 'entry 'entryfree 'head 'html 'tr
-             'form 'case)
+        ((or 'body 'case 'cb 'def 'dictionary 'entry 'entryfree
+             'form 'head 'html 'lbl 'pb 'tr 'xr)
          (lexic--parsecar children))
         (_
          (message "Unknown node %s, ignoring" node-name)
