@@ -1,15 +1,20 @@
-;;; lexic.el --- a major mode to find out more about words -*- lexical-binding: t; -*-
+;;; lexic.el --- A major mode to find out more about words -*- lexical-binding: t; -*-
 
 ;; Copyright 2006~2008 pluskid,
 ;;           2011~2012 gucong
 ;;           2020 tecosaur
-;;
+
 ;; Author: pluskid <pluskid@gmail.com>,
 ;;         gucong <gucong43216@gmail.com>,
-;;         tecosaur <tec@tecosaur.com>
+;;         TEC <tec@tecosaur.com>
 ;;
+;; Maintainer: TEC <tec@tecosaur.com>
+;; Version: 0.0.1
+;; Homepage: https://github.com/tecosaur/lexic
 ;; Package-Requires: ((emacs "26.3") (dash "2.17.0"))
-;;
+
+;;; License:
+
 ;; This program is free software; you can redistribute it and/or
 ;; modify it under the terms of the GNU General Public License as
 ;; published by the Free Software Foundation; either version 2, or (at
@@ -557,8 +562,7 @@ Returns a list of plists with keys :word, :dict, and :info."
               (append entries
                       `((:word ,word
                          :dict ,dict
-                         :info ,(buffer-substring last-match (point-max)))))))))
-  )
+                         :info ,(buffer-substring last-match (point-max))))))))))
 
 (defun lexic-failed-p (results)
   "Whether the RESULTS match the hardcoded failure pattern."
@@ -1313,8 +1317,7 @@ This should also work nicely with GCIDE."
                ("Zoöl"                    "Zoölogy")
                ;; Reordered for correctness
                ("n"                       "noun")
-               ("v"                       "verb")
-               )))
+               ("v"                       "verb"))))
         (dolist (abbrev abbreviations)
           (setq content
                 (replace-regexp-in-string
@@ -1661,8 +1664,7 @@ This should also work nicely with GCIDE."
            "\\.\\.\\." "…"
            (replace-regexp-in-string
             "\\*\\*\\*\\*\\*\\*\\*\\*" "✶"
-            pronunciation
-            )))
+            pronunciation)))
     (dolist (dcrt diacritics)
       (setq pronunciation (replace-regexp-in-string
                            (concat "\\[" (car dcrt) "\\]")
@@ -1778,8 +1780,7 @@ collected using https://framagit.org/tuxor1337/dictmaster."
                   (propertize (concat " ──"
                                       (lexic-format-reflow-text (match-string 2 match)
                                                                 75 5 3 "   "))
-                              'face '(italic font-lock-type-face))
-                  )))
+                              'face '(italic font-lock-type-face)))))
        (replace-regexp-in-string "<br/>\n?<br/>" "\n")
        (replace-regexp-in-string
         "<p>\\(.*?\\)</p>"
@@ -1792,8 +1793,7 @@ collected using https://framagit.org/tuxor1337/dictmaster."
        (replace-regexp-in-string
         "^.\\{86,\\}"
         (lambda (match)
-          (lexic-format-reflow-text match 80 5)))
-       ))
+          (lexic-format-reflow-text match 80 5)))))
 
 (defun lexic-format-element (entry &optional _expected-word)
   "Make an ENTRY for an element Look nice.
