@@ -111,7 +111,9 @@ Word may contain some special characters:
     ?       match zero or one character
     /       used at the beginning, for fuzzy search
     |       used at the beginning, for data search
-    \       escape the character right after"
+    \       escape the character right after
+
+TODO decouple the tool from the general method."
   (interactive
    (let* ((dict-list-name
            (and current-prefix-arg lexic-dictionary-alist
