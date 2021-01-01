@@ -66,8 +66,7 @@
 ;; 2012/01/02
 ;;     * New variable: `lexic-word-processor'
 ;;     * Breaking change:
-;;       for `shttps://github.com/gucong/emacs-lexic/blob/master/lexic-mode.elhttps://github.com/gucong/emacs-lexic/blob/master/lexic-mode.eldcv-dictionary-list' and `lexic-dictionary-alist',
-;;       non-list (non-nil) value now means full dictionary list
+;;       for `lexic-dictionary-alist', non-list (non-nil) value now means full dictionary list
 ;;     * Rewrite `lexic-search' for both interactive and non-interactive use
 ;;     * `lexic-dictionary-list' is left for customization use only
 ;;     * Better highlighting.
