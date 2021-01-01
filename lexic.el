@@ -85,7 +85,6 @@
 (require 'outline)
 (require 'dash)
 (require 'cl-lib)
-(provide 'lexic)
 
 ;;; ==================================================================
 ;;; Frontend, search word and display lexic buffer
@@ -1893,4 +1892,5 @@ If not, look up both of the words.
             word)))
 ")
 
+(provide 'lexic)
 ;;; lexic.el ends here
