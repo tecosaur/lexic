@@ -90,7 +90,7 @@
 
 ;;;###autoload
 (defun lexic-search (word &optional dict-list-name dict-list interactive-p no-history-p)
-  "Search WORD through the command-line tool lexic.
+  "Search WORD through the command line tool lexic.
 The result will be displayed in buffer named with
 `lexic-buffer-name' with `lexic-mode' if called interactively.
 
@@ -104,6 +104,11 @@ Prefix argument have the following meaning:
 If `lexic-dictionary-alist' is defined,
 use prefix argument to select a new DICT-LIST-NAME.
 Otherwise, prefix argument means using all dictionaries.
+
+When INTERACTIVE-P is non-nil, a buffer displaying the result(s) is shown.
+Otherwise, the result is returned as a string.
+
+When NO-HISTORY-P is non-nil, the search is not added to the session history.
 
 Word may contain some special characters:
     *       match zero or more characters
@@ -179,6 +184,7 @@ TODO decouple the tool from the general method."
           (window-resize window (- 12 height)))))))
 
 (defun lexic-search-word-at-point ()
+  "Perform `lexic-search' on the word at or near point."
   (interactive)
   (lexic-search
    (downcase
@@ -196,8 +202,8 @@ TODO decouple the tool from the general method."
 (defvar lexic-current-dictionary-list nil)
 
 (defun lexic-generate-dictionary-argument ()
-  "Generate dictionary argument for lexic from `lexic-current-dictionary-list'
-and `lexic-dictionary-path'."
+  "Generate the appropriate stcv dictionary argument.
+Using `lexic-current-dictionary-list' and `lexic-dictionary-path'."
   (append
    (and lexic-dictionary-path (list "--data-dir" lexic-dictionary-path))
    (and (listp lexic-current-dictionary-list)
@@ -209,6 +215,7 @@ and `lexic-dictionary-path'."
 (defvar lexic--search-history-position -1)
 
 (defun lexic-search-history-backwards ()
+  "Show the previous word searched."
   (interactive)
   (if (> lexic--search-history-position 0)
       (lexic-search (nth (setq lexic--search-history-position
@@ -218,6 +225,7 @@ and `lexic-dictionary-path'."
     (message "At start of search history.")))
 
 (defun lexic-search-history-forwards ()
+  "Show the next word searched."
   (interactive)
   (if (> (length lexic--search-history) lexic--search-history-position)
       (lexic-search (nth (setq lexic--search-history-position
@@ -315,6 +323,7 @@ the beginning of the buffer."
     (left-char 1)))
 
 (defun lexic-parse-failed ()
+  "Determine if the search failed, and if so parse the failure."
   (goto-char (point-min))
   (let (save-word)
     (while (re-search-forward "^[0-9]+).*-->\\(.*\\)$" nil t)
@@ -372,6 +381,7 @@ the beginning of the buffer."
   (message "%s" (lexic-get-outline-path)))
 
 (defun lexic-toggle-entry ()
+  "Toggle the folding of the lexic entry point currently lies in."
   (interactive)
   (save-excursion
     (outline-back-to-heading)
@@ -409,6 +419,8 @@ the beginning of the buffer."
     (lexic-format-result result))))))
 
 (defun lexic-oneshot-lookup (word &optional raw-p args)
+  "Use a oneshot stcv process just to look up WORD, with ARGS.
+Optional argument RAW-P signals whether the result should be formatted or not."
   (let ((result (shell-command-to-string
                  (concat lexic-program-path " -n " args
                          " '" (replace-regexp-in-string "'" "\\'" word) "'"))))
@@ -416,11 +428,9 @@ the beginning of the buffer."
       (lexic-format-result result))))
 
 (defvar lexic-wait-timeout 2
-  "The max time (in seconds) to wait for the lexic process to
-produce some output.")
+  "The max time (in seconds) to wait for the lexic process to produce some output.")
 (defvar lexic-wait-interval 0.1
-  "The interval (in seconds) to sleep each time to wait for
-lexic's output.")
+  "The interval (in seconds) to sleep each time to wait for lexic's output.")
 
 (defconst lexic-process-name "%lexic-mode-process%")
 (defconst lexic-process-buffer-name "*lexic-mode-process*")
@@ -429,12 +439,11 @@ lexic's output.")
   "A list of prompts that lexic use to prompt for word.")
 
 (defvar lexic-choice-prompts '("Your choice[-1 to abort]: ")
-  "A list of prompts that lexic use to prompt for a choice
-of multiple candicates.")
+  "A list of prompts that lexic use to prompt for a choice of multiple candicates.")
 
 (defvar lexic-result-patterns '("^Found [0-9]+ items, similar to [*?/|]*\\(.+?\\)[*?]*\\.")
-  "A list of patterns to extract result word of lexic. Special
-characters are stripped.")
+  "A list of patterns to extract result word of lexic.
+Special characters are stripped.")
 
 (defun lexic-get-process ()
   "Get or create the lexic process."
@@ -465,8 +474,7 @@ characters are stripped.")
     process))
 
 (defun lexic-buffer-tail (length)
-  "Get a substring of length LENGTH at the end of
-current buffer."
+  "Get a substring of length LENGTH at the end of current buffer."
   (let ((beg (- (point-max) length))
 	(end (point-max)))
     (if (< beg (point-min))
@@ -474,6 +482,8 @@ current buffer."
     (buffer-substring-no-properties beg end)))
 
 (defun lexic-match-tail (prompts)
+  "Look for a sdcv prompt from PROMPTS in the tail of the current buffer.
+Remove it and return t if found. Return nil otherwise."
   (let ((done nil)
 	(prompt nil))
     (while (and (not done)
@@ -494,7 +504,7 @@ current buffer."
 (defun lexic-format-result (result)
   "For a given RESULT from lexic, test for failure and format accordingly.
 Entries are sorted by their :priority in `lexic-dictionary-specs', and formatted by
-`lexic-format-result' in the case of success; `lexic-format-failure' otherwise."
+`lexic-format-result' in the case of success, `lexic-format-failure' otherwise."
 
   (if (lexic-failed-p result)
       (lexic-format-failure result)
@@ -518,7 +528,8 @@ Entries are sorted by their :priority in `lexic-dictionary-specs', and formatted
                       entries))))))
 
 (defun lexic-parse-results (result)
-  "TODO"
+  "Loop through every entry in RESULT and parse each one.
+Returns a list of plists with keys :word, :dict, and :info."
   (let (entries latest-match last-match dict word)
     (with-temp-buffer
       (insert result)
@@ -1654,6 +1665,14 @@ This should also work nicely with GCIDE."
     pronunciation))
 
 (defun lexic-format-reflow-text (text max-width &optional min-width initial-colunm indent sepregex)
+  "Add new lines as appropriate to ensure that TEXT never goes above MAX-WIDTH columns.
+
+Can also set a MIN-WIDTH for new lines of text created by a line break,
+an INITIAL-COLUNM that the text starts at, and an INDENT string to be inserted after every
+line break.
+
+When regex SEPREGEX is provided, it is used to detect word seperators.
+It is \"[ ,.]\" by default."
   (let* ((initial-col (or initial-colunm 0))
          (min-width (or min-width 1))
          (indent (or indent ""))
@@ -1771,7 +1790,7 @@ collected using https://framagit.org/tuxor1337/dictmaster."
        ))
 
 (defun lexic-format-element (entry &optional _expected-word)
-  "Make an ENTRY for ELEMENT look nice.
+  "Make an ENTRY for an element Look nice.
 Based on http://download.huzheng.org/dict.org/stardict-dictd_www.dict.org_elements-2.4.2.tar.bz2."
   (replace-regexp-in-string
         "^\\([a-z]+\\)
@@ -1845,8 +1864,7 @@ dictionary list. It has the form:
    ((\"full\" . t)
     (\"group1\" \"dict1\" \"dict2\" ...)
     (\"group2\" \"dict2\" \"dict3\"))
-Any cons cell here means using all dictionaries.
-")
+Any cons cell here means using all dictionaries.")
 
 (defvar lexic-program-path (executable-find "sdcv")
   "The path of lexic program.")
