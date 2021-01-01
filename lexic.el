@@ -11,7 +11,7 @@
 ;; Maintainer: TEC <tec@tecosaur.com>
 ;; Version: 0.0.1
 ;; Homepage: https://github.com/tecosaur/lexic
-;; Package-Requires: ((emacs "26.3") (dash "2.17.0"))
+;; Package-Requires: ((emacs "26.3") (dash "2.17.0") (visual-fill-column "2.2"))
 
 ;;; License:
 
@@ -92,7 +92,80 @@
 
 (require 'outline)
 (require 'dash)
+(require 'visual-fill-column)
 (require 'cl-lib)
+
+;;;;##################################################################
+;;;;  User Options, Variables
+;;;;##################################################################
+
+(defvar lexic-buffer-name "*lexic*"
+  "The name of the buffer of lexic.")
+(defvar lexic-dictionary-list t
+  "A list of dictionaries to use.
+Each entry is a string denoting the name of a dictionary, which
+is then passed to lexic through the '-u' command line option.
+Any non-list value means using all the dictionaries.")
+(defvar lexic-dictionary-alist nil
+  "An alist of dictionaries, used to interactively form
+dictionary list. It has the form:
+   ((\"full\" . t)
+    (\"group1\" \"dict1\" \"dict2\" ...)
+    (\"group2\" \"dict2\" \"dict3\"))
+Any cons cell here means using all dictionaries.")
+
+(defvar lexic-program-path (executable-find "sdcv")
+  "The path of lexic program.")
+
+(defvar lexic-dictionary-path nil
+  "The path of dictionaries.")
+
+(defvar lexic-word-processor nil
+  "This is the function that take a word (stirng)
+and return a word or a list of words for lookup by `lexic-search'.
+All lookup result(s) will finally be concatenated together.
+
+`nil' value means do nothing with the original word.
+
+The following is an example.  This function takes the original word and
+compare whether simplified and traditional form of the word are the same.
+If not, look up both of the words.
+
+      (lambda (word)
+        (let ((sim (chinese-conv word \"simplified\"))
+              (tra (chinese-conv word \"traditional\")))
+          (if (not (string= sim tra))
+              (list sim tra)
+            word)))
+")
+
+
+(defvar lexic-current-dictionary-list nil)
+
+(defvar lexic-wait-timeout 2
+  "The max time (in seconds) to wait for the lexic process to produce some output.")
+(defvar lexic-wait-interval 0.1
+  "The interval (in seconds) to sleep each time to wait for lexic's output.")
+
+(defconst lexic-process-name "%lexic-mode-process%")
+(defconst lexic-process-buffer-name "*lexic-mode-process*")
+
+(defvar lexic-word-prompts '("Enter word or phrase: ")
+  "A list of prompts that lexic use to prompt for word.")
+
+(defvar lexic-choice-prompts '("Your choice[-1 to abort]: ")
+  "A list of prompts that lexic use to prompt for a choice of multiple candicates.")
+
+(defvar lexic-result-patterns '("^Found [0-9]+ items, similar to [*?/|]*\\(.+?\\)[*?]*\\.")
+  "A list of patterns to extract result word of lexic.
+Special characters are stripped.")
+
+(defvar lexic--search-history nil)
+(defvar lexic--search-history-position -1)
+
+(defvar lexic-expand-abbreviations t
+  "Whether or not to try to expand abbreviations, where they are expected.")
+
 
 ;;; ==================================================================
 ;;; Frontend, search word and display lexic buffer
@@ -208,8 +281,6 @@ TODO decouple the tool from the general method."
   (let (resize-mini-windows)
     (shell-command (concat lexic-program-path " -l") lexic-buffer-name)))
 
-(defvar lexic-current-dictionary-list nil)
-
 (defun lexic-generate-dictionary-argument ()
   "Generate the appropriate stcv dictionary argument.
 Using `lexic-current-dictionary-list' and `lexic-dictionary-path'."
@@ -219,9 +290,6 @@ Using `lexic-current-dictionary-list' and `lexic-dictionary-path'."
         (mapcan (lambda (dict)
                   (list "-u" dict))
                 lexic-current-dictionary-list))))
-
-(defvar lexic--search-history nil)
-(defvar lexic--search-history-position -1)
 
 (defun lexic-search-history-backwards ()
   "Show the previous word searched."
@@ -307,10 +375,9 @@ Turning on Text mode runs the normal hook `lexic-mode-hook'."
   (setq buffer-read-only t)
   (setq-local outline-regexp "\u200B+")
   (setq-local outline-heading-end-regexp "\u2008")
-  (when (require 'visual-fill-column nil t)
-    (setq-local visual-fill-column-center-text t)
-    (visual-fill-column-mode 1)
-    (setq-local display-line-numbers-type nil)))
+  (setq-local visual-fill-column-center-text t)
+  (visual-fill-column-mode 1)
+  (setq-local display-line-numbers-type nil))
 
 (defun lexic-mode-reinit ()
   "Re-initialize buffer.
@@ -435,24 +502,6 @@ Optional argument RAW-P signals whether the result should be formatted or not."
                          " '" (replace-regexp-in-string "'" "\\'" word) "'"))))
     (if raw-p result
       (lexic-format-result result))))
-
-(defvar lexic-wait-timeout 2
-  "The max time (in seconds) to wait for the lexic process to produce some output.")
-(defvar lexic-wait-interval 0.1
-  "The interval (in seconds) to sleep each time to wait for lexic's output.")
-
-(defconst lexic-process-name "%lexic-mode-process%")
-(defconst lexic-process-buffer-name "*lexic-mode-process*")
-
-(defvar lexic-word-prompts '("Enter word or phrase: ")
-  "A list of prompts that lexic use to prompt for word.")
-
-(defvar lexic-choice-prompts '("Your choice[-1 to abort]: ")
-  "A list of prompts that lexic use to prompt for a choice of multiple candicates.")
-
-(defvar lexic-result-patterns '("^Found [0-9]+ items, similar to [*?/|]*\\(.+?\\)[*?]*\\.")
-  "A list of patterns to extract result word of lexic.
-Special characters are stripped.")
 
 (defun lexic-get-process ()
   "Get or create the lexic process."
@@ -596,7 +645,7 @@ Returns a list of plists with keys :word, :dict, and :info."
                                       'face 'outline-3)
                           (propertize
                            (mapconcat 'identity (cadr dict-suggestions) "\n\u200B\u200B\u200B")
-                                      'face 'font-lock-keyword-face)))
+                           'face 'font-lock-keyword-face)))
                 (sort suggestions
                       (lambda (a b)
                         (< (or (lexic-dictionary-spec (car a) :priority) 1)
@@ -660,10 +709,6 @@ entry."
                      (search-forward-regexp "\u200B+"))
      (point)))
 
-(defun lexic-dictionary-spec (dict spec)
-  "Helper function to get a :SPEC of a given DICT."
-  (plist-get (cdr (assoc dict lexic-dictionary-specs)) spec))
-
 (defvar lexic-dictionary-specs
   '(("Webster's Revised Unabridged Dictionary (1913)"
      :formatter lexic-format-webster
@@ -688,6 +733,10 @@ according to lexic, and the cdr is a plist whith the following options:
   :short - a (usually) shorter display name for the dictionary
   :formatter - a function with signature (ENTRY WORD) that returns a string
   :priority - sort priority, defaults to 1")
+
+(defun lexic-dictionary-spec (dict spec)
+  "Helper function to get a :SPEC of a given DICT."
+  (plist-get (cdr (assoc dict lexic-dictionary-specs)) spec))
 
 (defun lexic-format-webster (entry &optional _expected-word)
   "Make a Webster's dictionary ENTRY for WORD look nice.
@@ -739,8 +788,8 @@ This should also work nicely with GCIDE."
                  (etymology (lexic-format-expand-abbreviations (match-string (if alternative-forms 6 5) match)))
                  (category (lexic-format-expand-abbreviations (match-string 7 match)))
                  (last-newline (lambda (text) (- (length text)
-                                                 (or (save-match-data
-                                                       (string-match "\n[^\n]*\\'" text)) 0)))))
+                                            (or (save-match-data
+                                                  (string-match "\n[^\n]*\\'" text)) 0)))))
             (concat
              "\u200B\u200B\u200B"
              (propertize word2
@@ -852,9 +901,6 @@ This should also work nicely with GCIDE."
         (lambda (match)
           (propertize  (concat "  "(match-string 1 match) ": ")
                        'face 'bold)))))
-
-(defvar lexic-expand-abbreviations t
-  "Whether or not to try to expand abbreviations, where they are expected.")
 
 (defun lexic-format-expand-abbreviations (content &optional force)
   "Expand certain standard abbreviations in CONTENT when `lexic-expand-abbreviations' or FORCE are non-nil."
@@ -1852,50 +1898,6 @@ Designed using http://download.huzheng.org/bigdict/stardict-Soule_s_Dictionary_o
        (replace-regexp-in-string
         ","
         (propertize "," 'face 'font-lock-type-face))))
-
-;;;;##################################################################
-;;;;  User Options, Variables
-;;;;##################################################################
-
-(defvar lexic-buffer-name "*lexic*"
-  "The name of the buffer of lexic.")
-(defvar lexic-dictionary-list t
-  "A list of dictionaries to use.
-Each entry is a string denoting the name of a dictionary, which
-is then passed to lexic through the '-u' command line option.
-Any non-list value means using all the dictionaries.")
-(defvar lexic-dictionary-alist nil
-  "An alist of dictionaries, used to interactively form
-dictionary list. It has the form:
-   ((\"full\" . t)
-    (\"group1\" \"dict1\" \"dict2\" ...)
-    (\"group2\" \"dict2\" \"dict3\"))
-Any cons cell here means using all dictionaries.")
-
-(defvar lexic-program-path (executable-find "sdcv")
-  "The path of lexic program.")
-
-(defvar lexic-dictionary-path nil
-  "The path of dictionaries.")
-
-(defvar lexic-word-processor nil
-  "This is the function that take a word (stirng)
-and return a word or a list of words for lookup by `lexic-search'.
-All lookup result(s) will finally be concatenated together.
-
-`nil' value means do nothing with the original word.
-
-The following is an example.  This function takes the original word and
-compare whether simplified and traditional form of the word are the same.
-If not, look up both of the words.
-
-      (lambda (word)
-        (let ((sim (chinese-conv word \"simplified\"))
-              (tra (chinese-conv word \"traditional\")))
-          (if (not (string= sim tra))
-              (list sim tra)
-            word)))
-")
 
 (provide 'lexic)
 ;;; lexic.el ends here
