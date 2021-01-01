@@ -154,19 +154,19 @@ TODO decouple the tool from the general method."
     (while (get-process lexic-process-name)
       (sleep-for 0.01)))
   (let ((result
-          (mapconcat
-           (lambda (w) (lexic-do-lookup w))
-           (if lexic-word-processor
-               (let ((processed (funcall lexic-word-processor word)))
-                 (if (listp processed) processed (list processed)))
-             (list word))
-           "")))
+         (mapconcat
+          (lambda (w) (lexic-do-lookup w))
+          (if lexic-word-processor
+              (let ((processed (funcall lexic-word-processor word)))
+                (if (listp processed) processed (list processed)))
+            (list word))
+          "")))
     (unless (or no-history-p (string= word
                                       (nth lexic--search-history-position
                                            lexic--search-history)))
       (setq lexic--search-history
             (append (cl-subseq lexic--search-history
-                            0 (1+ lexic--search-history-position))
+                               0 (1+ lexic--search-history-position))
                     (list word))
             lexic--search-history-position (1- (length lexic--search-history))))
     (if (not interactive-p)
@@ -223,9 +223,9 @@ Using `lexic-current-dictionary-list' and `lexic-dictionary-path'."
   (interactive)
   (if (> lexic--search-history-position 0)
       (lexic-search (nth (setq lexic--search-history-position
-                              (1- lexic--search-history-position))
-                        lexic--search-history)
-                   nil nil t t)
+                               (1- lexic--search-history-position))
+                         lexic--search-history)
+                    nil nil t t)
     (message "At start of search history.")))
 
 (defun lexic-search-history-forwards ()
@@ -233,9 +233,9 @@ Using `lexic-current-dictionary-list' and `lexic-dictionary-path'."
   (interactive)
   (if (> (length lexic--search-history) lexic--search-history-position)
       (lexic-search (nth (setq lexic--search-history-position
-                              (1+ lexic--search-history-position))
-                        lexic--search-history)
-                   nil nil t t)
+                               (1+ lexic--search-history-position))
+                         lexic--search-history)
+                    nil nil t t)
     (message "At end of search history.")))
 
 ;;; ==================================================================
@@ -246,7 +246,7 @@ Using `lexic-current-dictionary-list' and `lexic-dictionary-path'."
   "Switch to lexic buffer in other window."
   (interactive)
   (unless (eq (current-buffer)
-	      (lexic-get-buffer))
+              (lexic-get-buffer))
     (setq lexic-previous-window-conf (current-window-configuration)))
   (let* ((buffer (lexic-get-buffer))
          (window (get-buffer-window buffer)))
@@ -335,7 +335,6 @@ the beginning of the buffer."
         (unless (string= save-word cur-word)
           (setq save-word cur-word)
           (re-search-backward "^\\(.\\)" nil t)
-          (match-string 1)
           (insert (format "\n==>%s\n" save-word)))))))
 
 (defun lexic-expand-entry ()
@@ -343,7 +342,7 @@ the beginning of the buffer."
   (outline-show-children)
   (when ; no children
       (<= 0 (- (save-excursion (outline-next-heading) (point))
-                (save-excursion (outline-end-of-subtree) (point))))
+               (save-excursion (outline-end-of-subtree) (point))))
     (outline-show-subtree)))
 
 (defun lexic-next-entry (&optional linear)
@@ -398,29 +397,30 @@ the beginning of the buffer."
 ;;; ==================================================================
 ;;; Support for lexic process in background
 (defun lexic-do-lookup (word &optional raw-p)
-  "Send the word to the lexic process and return the result."
+  "Send the WORD to the lexic process and return the result.
+Optional argument RAW-P signals whether the result should be formatted or not."
   (let ((process (lexic-get-process)))
     (process-send-string process (concat word "\n"))
     (with-current-buffer (process-buffer process)
       (let ((i 0) result done)
-	(while (and (not done)
-		    (< i lexic-wait-timeout))
-	  (when (lexic-match-tail lexic-word-prompts)
-	    (setq result (buffer-substring-no-properties (point-min)
-						      (point-max)))
-	    (setq done t))
-	  (when (lexic-match-tail lexic-choice-prompts)
-	    (process-send-string process "-1\n"))
-	  (unless done
-	    (sleep-for lexic-wait-interval)
-	    (setq i (+ i lexic-wait-interval))))
-	(unless (< i lexic-wait-timeout)
-	  ;; timeout
-	  (kill-process process)
-	  (error "ERROR: timeout waiting for lexic"))
-	(erase-buffer)
-  (if raw-p result
-    (lexic-format-result result))))))
+        (while (and (not done)
+                    (< i lexic-wait-timeout))
+          (when (lexic-match-tail lexic-word-prompts)
+            (setq result (buffer-substring-no-properties (point-min)
+                                                         (point-max)))
+            (setq done t))
+          (when (lexic-match-tail lexic-choice-prompts)
+            (process-send-string process "-1\n"))
+          (unless done
+            (sleep-for lexic-wait-interval)
+            (setq i (+ i lexic-wait-interval))))
+        (unless (< i lexic-wait-timeout)
+          ;; timeout
+          (kill-process process)
+          (error "ERROR: timeout waiting for lexic"))
+        (erase-buffer)
+        (if raw-p result
+          (lexic-format-result result))))))
 
 (defun lexic-oneshot-lookup (word &optional raw-p args)
   "Use a oneshot stcv process just to look up WORD, with ARGS.
@@ -480,18 +480,18 @@ Special characters are stripped.")
 (defun lexic-buffer-tail (length)
   "Get a substring of length LENGTH at the end of current buffer."
   (let ((beg (- (point-max) length))
-	(end (point-max)))
+        (end (point-max)))
     (if (< beg (point-min))
-	(setq beg (point-min)))
+        (setq beg (point-min)))
     (buffer-substring-no-properties beg end)))
 
 (defun lexic-match-tail (prompts)
   "Look for a sdcv prompt from PROMPTS in the tail of the current buffer.
 Remove it and return t if found. Return nil otherwise."
   (let ((done nil)
-	(prompt nil))
+        (prompt nil))
     (while (and (not done)
-		prompts)
+                prompts)
       (setq prompt (car prompts))
       (setq prompts (cdr prompts))
       (when (string-equal prompt
@@ -648,7 +648,7 @@ entry."
         (setq last-pos (point))
         (ignore-errors
           (outline-up-heading 1)))
-     (substring outline-path 2))))
+      (substring outline-path 2))))
 
 (defun lexic-outline-level ()
   "It seems that while (outline-level) should work, it has issues."
@@ -691,168 +691,169 @@ Designed for Webster's Revised Unabridged Dictionary (1913),
 as found at http://download.huzheng.org/dict.org/stardict-dictd-web1913-2.4.2.tar.bz2.
 
 This should also work nicely with GCIDE."
-    (->> (plist-get entry :info)
-         (lexic-format-webster-diacritics)
-         (replace-regexp-in-string ; entry dividors
-          (format "\n\n\\(%s\\)" (plist-get entry :word))
-          "\n                     ━━━━━━━━━ ■ ━━━━━━━━━\n\n\\1")
-         (replace-regexp-in-string ; entry headline
-          (rx line-start
-              (group-n 1 ; word
-                       (any "A-Z")
-                       (+ (any "a-z")))
-              (optional " \\" ; word2
-                        (group-n 2 (+ (not (any "\\"))))
-                        "\\")
-              (optional " (" ; pronounciation
-                        (group-n 3 (+ (not (any ")"))))
-                        ")")
-              ", "
-              (group-n 4 ; part of speech
-                       (+ (any "A-Z" "a-z" ".;&" " ")))
-              (optional "[" ; etymology / alternative forms
-                        (group-n 5
-                                 (+ (or (+ (not (any "][")))
-                                        (and "[" (+ (not (any "]["))) "]"))))
-                        "]")
-              (optional ; definately etymology
-               (+ (any "\n" " ")) "["
-               (group-n 6
-                        (+ (or (+ (not (any "][")))
-                               (and "[" (+ (not (any "]["))) "]"))))
-               "]")
-              (optional " (" ; category
-                        (group-n 7 (+ (not (any ")"))))
-                        ")"))
-          (lambda (match)
-            (let* ((word2 (match-string 2 match))
-                   (pronounciation (match-string 3 match))
-                   (part-of-speech (lexic-format-expand-abbreviations
-                                    (replace-regexp-in-string " \\'" ""
-                                                              (match-string 4 match))))
-                   (alternative-forms (when (match-string 6 match)
-                                        (lexic-format-expand-abbreviations (match-string 5 match))))
-                   (etymology (lexic-format-expand-abbreviations (match-string (if alternative-forms 6 5) match)))
-                   (category (lexic-format-expand-abbreviations (match-string 7 match)))
-                   (last-newline (lambda (text) (- (length text)
-                                              (or (save-match-data
-                                                    (string-match "\n[^\n]*\\'" text)) 0)))))
-              (concat
-               "\u200B\u200B\u200B"
-               (propertize word2
-                           'face 'bold)
-               (when pronounciation
-                 (propertize (format " %s" pronounciation)
-                             'face 'font-lock-type-face))
-               ", "
-               (propertize part-of-speech
-                           'face '(bold font-lock-keyword-face))
-               (when alternative-forms
-                 (setq alternative-forms
-                       (lexic-format-reflow-text
-                        (format " [%s]" alternative-forms)
-                        80 10
-                        (+ 3 (if pronounciation 1 0)
-                           (funcall last-newline
-                                    (concat word2 pronounciation part-of-speech)))
-                        "   "))
-                 (propertize alternative-forms
-                             'face 'diff-context))
-               (when etymology
-                 (setq etymology
-                       (lexic-format-reflow-text
-                        (format " [%s]" etymology)
-                        80 10
-                        (+ 3 (if pronounciation 1 0)
-                           (funcall last-newline
-                                    (concat word2 pronounciation part-of-speech alternative-forms)))
-                        "   "))
-                 (propertize etymology
-                             'face 'font-lock-comment-face))
-               (when category
-                 (propertize (format " (%s)" category)
-                             'face 'font-lock-constant-face))
-               "\u2008"))))
-         (replace-regexp-in-string ; categorised terms
-          "{\\([^}]+?\\)}\\(.?\\) (\\([^)]+?\\))"
-          (lambda (match)
-            (let ((term (match-string 1 match))
-                  (punct (match-string 2 match))
-                  (category (match-string 3 match)))
-              (concat
-               (propertize term 'face 'font-lock-keyword-face)
-               punct
+  (->> (plist-get entry :info)
+       (lexic-format-webster-diacritics)
+       (replace-regexp-in-string ; entry dividors
+        (format "\n\n\\(%s\\)" (plist-get entry :word))
+        "\n                     ━━━━━━━━━ ■ ━━━━━━━━━\n\n\\1")
+       (replace-regexp-in-string ; entry headline
+        (rx line-start
+            (group-n 1 ; word
+                     (any "A-Z")
+                     (+ (any "a-z")))
+            (optional " \\" ; word2
+                      (group-n 2 (+ (not (any "\\"))))
+                      "\\")
+            (optional " (" ; pronounciation
+                      (group-n 3 (+ (not (any ")"))))
+                      ")")
+            ", "
+            (group-n 4 ; part of speech
+                     (+ (any "A-Z" "a-z" ".;&" " ")))
+            (optional "[" ; etymology / alternative forms
+                      (group-n 5
+                               (+ (or (+ (not (any "][")))
+                                      (and "[" (+ (not (any "]["))) "]"))))
+                      "]")
+            (optional ; definately etymology
+             (+ (any "\n" " ")) "["
+             (group-n 6
+                      (+ (or (+ (not (any "][")))
+                             (and "[" (+ (not (any "]["))) "]"))))
+             "]")
+            (optional " (" ; category
+                      (group-n 7 (+ (not (any ")"))))
+                      ")"))
+        (lambda (match)
+          (let* ((word2 (match-string 2 match))
+                 (pronounciation (match-string 3 match))
+                 (part-of-speech (lexic-format-expand-abbreviations
+                                  (replace-regexp-in-string " \\'" ""
+                                                            (match-string 4 match))))
+                 (alternative-forms (when (match-string 6 match)
+                                      (lexic-format-expand-abbreviations (match-string 5 match))))
+                 (etymology (lexic-format-expand-abbreviations (match-string (if alternative-forms 6 5) match)))
+                 (category (lexic-format-expand-abbreviations (match-string 7 match)))
+                 (last-newline (lambda (text) (- (length text)
+                                                 (or (save-match-data
+                                                       (string-match "\n[^\n]*\\'" text)) 0)))))
+            (concat
+             "\u200B\u200B\u200B"
+             (propertize word2
+                         'face 'bold)
+             (when pronounciation
+               (propertize (format " %s" pronounciation)
+                           'face 'font-lock-type-face))
+             ", "
+             (propertize part-of-speech
+                         'face '(bold font-lock-keyword-face))
+             (when alternative-forms
+               (setq alternative-forms
+                     (lexic-format-reflow-text
+                      (format " [%s]" alternative-forms)
+                      80 10
+                      (+ 3 (if pronounciation 1 0)
+                         (funcall last-newline
+                                  (concat word2 pronounciation part-of-speech)))
+                      "   "))
+               (propertize alternative-forms
+                           'face 'diff-context))
+             (when etymology
+               (setq etymology
+                     (lexic-format-reflow-text
+                      (format " [%s]" etymology)
+                      80 10
+                      (+ 3 (if pronounciation 1 0)
+                         (funcall last-newline
+                                  (concat word2 pronounciation part-of-speech alternative-forms)))
+                      "   "))
+               (propertize etymology
+                           'face 'font-lock-comment-face))
+             (when category
+               (propertize (format " (%s)" category)
+                           'face 'font-lock-constant-face))
+             "\u2008"))))
+       (replace-regexp-in-string ; categorised terms
+        "{\\([^}]+?\\)}\\(.?\\) (\\([^)]+?\\))"
+        (lambda (match)
+          (let ((term (match-string 1 match))
+                (punct (match-string 2 match))
+                (category (match-string 3 match)))
+            (concat
+             (propertize term 'face 'font-lock-keyword-face)
+             punct
+             (propertize (format " (%s)"
+                                 (if lexic-expand-abbreviations
+                                     (lexic-format-expand-abbreviations category)
+                                   category))
+                         'face 'font-lock-constant-face)))))
+       (replace-regexp-in-string ; other terms
+        "{\\([^}]+?\\)}"
+        (lambda (match)
+          (let ((term (match-string 1 match)))
+            (concat
+             (propertize term 'face 'font-lock-keyword-face)))))
+       (replace-regexp-in-string ; quotations
+        "^\n            +\\(\\w[[:ascii:]]+?\\)\\(\n? *--[A-Za-z0-9. ]+\n? *[A-Za-z0-9. ]*\\)"
+        (lambda (match)
+          (let ((body (match-string 1 match))
+                (author (match-string 2 match)))
+            (concat
+             "\n           "
+             (propertize (format "❝%s❞" body)
+                         'face 'font-lock-doc-face)
+             author "\n"))))
+       (replace-regexp-in-string ; attributions
+        " --\\([A-Z][A-Za-z. ]+\n? *[A-Za-z0-9. ]*\\)"
+        (lambda (match)
+          (propertize (concat " ──" (match-string 1 match))
+                      'face '(italic font-lock-type-face))))
+       (replace-regexp-in-string ; inline quotations (1)
+        "``" "“")
+       (replace-regexp-in-string ; inline quotations (1)
+        "''" "”")
+       (replace-regexp-in-string ; em dash approximation
+        " -- " " ─── ")
+       (replace-regexp-in-string ; lists
+        "   \\(?:\\([0-9]+\\.\\)\\|\\(   ([a-z])\\)\\) \\(?: ?(\\([^)]+\\)) \\)?\\(.*\\)"
+        (lambda (match)
+          (let ((number (match-string 1 match))
+                (letter (match-string 2 match))
+                (category (match-string 3 match))
+                (rest-of-line (match-string 4 match)))
+            (concat
+             (when letter "\u200B")
+             "\u200B\u200B\u200B\u200B   "
+             (when number
+               (propertize number 'face '(bold font-lock-string-face)))
+             (when letter
+               (propertize letter 'face 'font-lock-string-face))
+             (when category
                (propertize (format " (%s)"
                                    (if lexic-expand-abbreviations
                                        (lexic-format-expand-abbreviations category)
                                      category))
-                           'face 'font-lock-constant-face)))))
-         (replace-regexp-in-string ; other terms
-          "{\\([^}]+?\\)}"
-          (lambda (match)
-            (let ((term (match-string 1 match)))
-              (concat
-               (propertize term 'face 'font-lock-keyword-face)))))
-         (replace-regexp-in-string ; quotations
-          "^\n            +\\(\\w[[:ascii:]]+?\\)\\(\n? *--[A-Za-z0-9. ]+\n? *[A-Za-z0-9. ]*\\)"
-          (lambda (match)
-            (let ((body (match-string 1 match))
-                  (author (match-string 2 match)))
-              (concat
-               "\n           "
-               (propertize (format "❝%s❞" body)
-                           'face 'font-lock-doc-face)
-               author "\n"))))
-         (replace-regexp-in-string ; attributions
-          " --\\([A-Z][A-Za-z. ]+\n? *[A-Za-z0-9. ]*\\)"
-          (lambda (match)
-            (propertize (concat " ──" (match-string 1 match))
-                        'face '(italic font-lock-type-face))))
-         (replace-regexp-in-string ; inline quotations (1)
-          "``" "“")
-         (replace-regexp-in-string ; inline quotations (1)
-          "''" "”")
-         (replace-regexp-in-string ; em dash approximation
-          " -- " " ─── ")
-         (replace-regexp-in-string ; lists
-          "   \\(?:\\([0-9]+\\.\\)\\|\\(   ([a-z])\\)\\) \\(?: ?(\\([^)]+\\)) \\)?\\(.*\\)"
-          (lambda (match)
-            (let ((number (match-string 1 match))
-                  (letter (match-string 2 match))
-                  (category (match-string 3 match))
-                  (rest-of-line (match-string 4 match)))
-              (concat
-               (when letter "\u200B")
-               "\u200B\u200B\u200B\u200B   "
-               (when number
-                 (propertize number 'face '(bold font-lock-string-face)))
-               (when letter
-                 (propertize letter 'face 'font-lock-string-face))
-               (when category
-                 (propertize (format " (%s)"
-                                     (if lexic-expand-abbreviations
-                                         (lexic-format-expand-abbreviations category)
-                                       category))
-                             'face 'font-lock-constant-face))
-               " "
-               rest-of-line
-               "\u2008"))))
-         (replace-regexp-in-string ; note
-          "  Note: "
-          (concat "     "
-                  (propertize " " 'display '(space . (:width 0.55)))
-                  (propertize "☞" 'face 'font-lock-function-name-face)
-                  " "))
-         (replace-regexp-in-string ; subheadings
-          "  \\(\\w+\\): "
-          (lambda (match)
-            (propertize  (concat "  "(match-string 1 match) ": ")
-                         'face 'bold)))))
+                           'face 'font-lock-constant-face))
+             " "
+             rest-of-line
+             "\u2008"))))
+       (replace-regexp-in-string ; note
+        "  Note: "
+        (concat "     "
+                (propertize " " 'display '(space . (:width 0.55)))
+                (propertize "☞" 'face 'font-lock-function-name-face)
+                " "))
+       (replace-regexp-in-string ; subheadings
+        "  \\(\\w+\\): "
+        (lambda (match)
+          (propertize  (concat "  "(match-string 1 match) ": ")
+                       'face 'bold)))))
 
 (defvar lexic-expand-abbreviations t
   "Whether or not to try to expand abbreviations, where they are expected.")
 
 (defun lexic-format-expand-abbreviations (content &optional force)
+  "Expand certain standard abbreviations in CONTENT when `lexic-expand-abbreviations' or FORCE are non-nil."
   (when content
     (when (or lexic-expand-abbreviations force)
       (let ((abbreviations
@@ -1323,6 +1324,7 @@ This should also work nicely with GCIDE."
     content))
 
 (defun lexic-format-webster-diacritics (pronunciation)
+  "Replace ascii pronounciation symbols in PRONOUNCIATION with unicode equivalents."
   (let ((diacritics
          '(("[,C]" "Ç")
            ("\"u" "ü") ; uum
@@ -1663,9 +1665,9 @@ This should also work nicely with GCIDE."
             )))
     (dolist (dcrt diacritics)
       (setq pronunciation (replace-regexp-in-string
-             (concat "\\[" (car dcrt) "\\]")
-             (cadr dcrt)
-             pronunciation t)))
+                           (concat "\\[" (car dcrt) "\\]")
+                           (cadr dcrt)
+                           pronunciation t)))
     pronunciation))
 
 (defun lexic-format-reflow-text (text max-width &optional min-width initial-colunm indent sepregex)
@@ -1719,7 +1721,7 @@ collected using https://framagit.org/tuxor1337/dictmaster."
   (->> (string-join
         (mapcar (lambda (e) (plist-get e :info))
                 (-filter (lambda (e) (string= (plist-get e :dict)
-                                         (plist-get entry :dict)))
+                                              (plist-get entry :dict)))
                          (lexic-parse-results
                           (lexic-oneshot-lookup
                            (replace-regexp-in-string " ?(.*)" " (*)" (plist-get entry :word)) ; lexic accepts a glob
@@ -1775,8 +1777,8 @@ collected using https://framagit.org/tuxor1337/dictmaster."
                   "❞\n"
                   (propertize (concat " ──"
                                       (lexic-format-reflow-text (match-string 2 match)
-                                                               75 5 3 "   "))
-                               'face '(italic font-lock-type-face))
+                                                                75 5 3 "   "))
+                              'face '(italic font-lock-type-face))
                   )))
        (replace-regexp-in-string "<br/>\n?<br/>" "\n")
        (replace-regexp-in-string
@@ -1784,39 +1786,39 @@ collected using https://framagit.org/tuxor1337/dictmaster."
         (lambda (match)
           (concat
            (lexic-format-reflow-text (match-string 1 match)
-                                    80 5)
+                                     80 5)
            "\n")))
        (replace-regexp-in-string "</?p>" "") ; any straggling pars
        (replace-regexp-in-string
         "^.\\{86,\\}"
         (lambda (match)
-           (lexic-format-reflow-text match 80 5)))
+          (lexic-format-reflow-text match 80 5)))
        ))
 
 (defun lexic-format-element (entry &optional _expected-word)
   "Make an ENTRY for an element Look nice.
 Based on http://download.huzheng.org/dict.org/stardict-dictd_www.dict.org_elements-2.4.2.tar.bz2."
   (replace-regexp-in-string
-        "^\\([a-z]+\\)
+   "^\\([a-z]+\\)
 Symbol: \\([A-Za-z]+\\)
 Atomic number: \\([0-9]+\\)
 Atomic weight: \\((?[0-9.]+)?\\)"
-        (lambda (match)
-          (let ((element (match-string 1 match))
-                (symbol (match-string 2 match))
-                (number (match-string 3 match))
-                (weight (match-string 4 match)))
-            (format
-             "┌────────────────┐
+   (lambda (match)
+     (let ((element (match-string 1 match))
+           (symbol (match-string 2 match))
+           (number (match-string 3 match))
+           (weight (match-string 4 match)))
+       (format
+        "┌────────────────┐
 │ %-3s %10s │
 │ %s %11s │
 └────────────────┘
 "
-             (propertize number 'face 'font-lock-function-name-face)
-             (propertize weight 'face 'font-lock-comment-face)
-             (propertize symbol 'face '(bold font-lock-keyword-face))
-             (propertize element 'face 'font-lock-string-face))))
-        (plist-get entry :info)))
+        (propertize number 'face 'font-lock-function-name-face)
+        (propertize weight 'face 'font-lock-comment-face)
+        (propertize symbol 'face '(bold font-lock-keyword-face))
+        (propertize element 'face 'font-lock-string-face))))
+   (plist-get entry :info)))
 
 (defun lexic-format-soule (entry &optional _expected-word)
   "Format an ENTRY for WORD in Soule's Dictionary of English Synonyms.
