@@ -617,13 +617,13 @@ entry."
                (point)
                (save-excursion (search-forward "\u2008") (point))))
         (setq level-regexp
-              (case outline-level-current
+              (pcase outline-level-current
                 (1 "^\\([^\n]+\\)")
                 (2 "^\\([^ \n]+\\)")
                 (3 "^\u200B\u200B*\\([^,]+\\(?:, [ &.;a-z]+\\)?\\)")
                 (4 "\\([0-9]+\\.\\(  ?([^)]+)\\)?\\( \\w+\\)\\{0,4\\}\\)")
                 (5 "\\(([a-z])\\(  ?([^)]+)\\)?\\( \\w+\\)\\{0,4\\}\\)")
-                (t "^\u200B\u200B*\\([^ ]+\\)")))
+                (_ "^\u200B\u200B*\\([^ ]+\\)")))
         (setq outline-path
               (concat
                (propertize " → " 'face 'bold)
@@ -671,7 +671,7 @@ according to lexic, and the cdr is a plist whith the following options:
   :formatter - a function with signature (ENTRY WORD) that returns a string
   :priority - sort priority, defaults to 1")
 
-(defun lexic-format-webster (entry &optional expected-word)
+(defun lexic-format-webster (entry &optional _expected-word)
   "Make a Webster's dictionary ENTRY for WORD look nice.
 Designed for Webster's Revised Unabridged Dictionary (1913),
 as found at http://download.huzheng.org/dict.org/stardict-dictd-web1913-2.4.2.tar.bz2.
@@ -1690,7 +1690,7 @@ This should also work nicely with GCIDE."
                text))))
     reflowed-text))
 
-(defun lexic-format-online-etym (entry &optional expected-word)
+(defun lexic-format-online-etym (entry &optional _expected-word)
   "Make an html ENTRY look nice.
 Designed for an export of Douglas Harper's Online Etymology Dictionary,
 collected using https://framagit.org/tuxor1337/dictmaster."
@@ -1771,7 +1771,7 @@ collected using https://framagit.org/tuxor1337/dictmaster."
            (lexic-format-reflow-text match 80 5)))
        ))
 
-(defun lexic-format-element (entry element &optional expected-word)
+(defun lexic-format-element (entry &optional _expected-word)
   "Make an ENTRY for ELEMENT look nice.
 Based on http://download.huzheng.org/dict.org/stardict-dictd_www.dict.org_elements-2.4.2.tar.bz2."
   (replace-regexp-in-string
@@ -1796,7 +1796,7 @@ Atomic weight: \\((?[0-9.]+)?\\)"
              (propertize element 'face 'font-lock-string-face))))
         (plist-get entry :info)))
 
-(defun lexic-format-soule (entry &optional expected-word)
+(defun lexic-format-soule (entry &optional _expected-word)
   "Format an ENTRY for WORD in Soule's Dictionary of English Synonyms.
 Designed using http://download.huzheng.org/bigdict/stardict-Soule_s_Dictionary_of_English_Synonyms-2.4.2.tar.bz2."
   (->> (plist-get entry :info)
