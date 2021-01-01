@@ -586,8 +586,8 @@ Returns a list of plists with keys :word, :dict, and :info."
                                        (lexic-dictionary-spec (car dict-suggestions) :short)
                                        (car dict-suggestions))
                                       'face 'outline-3)
-                          (propertize (s-join "\n\u200B\u200B\u200B"
-                                              (cadr dict-suggestions))
+                          (propertize
+                           (mapconcat 'identity (cadr dict-suggestions) "\n\u200B\u200B\u200B")
                                       'face 'font-lock-keyword-face)))
                 (sort suggestions
                       (lambda (a b)
