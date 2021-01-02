@@ -94,6 +94,10 @@
 (require 'dash)
 (require 'visual-fill-column)
 (require 'cl-lib)
+(require 'subr-x)
+(require 'display-line-numbers)
+
+(declare-function spell-fu-mode "spell-fu")
 
 ;;;;##################################################################
 ;;;;  User Options, Variables
