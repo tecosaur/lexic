@@ -111,8 +111,8 @@ Each entry is a string denoting the name of a dictionary, which
 is then passed to lexic through the '-u' command line option.
 Any non-list value means using all the dictionaries.")
 (defvar lexic-dictionary-alist nil
-  "An alist of dictionaries, used to interactively form
-dictionary list. It has the form:
+  "An alist of dictionaries, used to interactively form the dictionary list.
+It has the form:
    ((\"full\" . t)
     (\"group1\" \"dict1\" \"dict2\" ...)
     (\"group2\" \"dict2\" \"dict3\"))
@@ -129,7 +129,7 @@ Any cons cell here means using all dictionaries.")
 and return a word or a list of words for lookup by `lexic-search'.
 All lookup result(s) will finally be concatenated together.
 
-`nil' value means do nothing with the original word.
+nil value means do nothing with the original word.
 
 The following is an example.  This function takes the original word and
 compare whether simplified and traditional form of the word are the same.
@@ -144,7 +144,10 @@ If not, look up both of the words.
 ")
 
 
-(defvar lexic-current-dictionary-list nil)
+(defvar lexic-current-dictionary-list nil
+  "A list of dictionaries to use in searches.
+Either entries from `lexic-dictionary-alist', or any non-list value,
+which will cause all avalible dictionaries to be used.")
 
 (defvar lexic-wait-timeout 2
   "The max time (in seconds) to wait for the lexic process to produce some output.")
@@ -219,7 +222,7 @@ TODO decouple the tool from the general method."
                              nil nil guess)))
      (list word dict-list-name dict-list t)))
   ;; init current dictionary list
-  (when (null lexic-current-dictionary-list)
+  (unless lexic-current-dictionary-list
     (setq lexic-current-dictionary-list lexic-dictionary-list))
   ;; dict-list-name to dict-list
   (when (and (not dict-list) dict-list-name)
@@ -510,11 +513,11 @@ Optional argument RAW-P signals whether the result should be formatted or not."
 (defun lexic-get-process ()
   "Get or create the lexic process."
   (let ((process (get-process lexic-process-name)))
-    (when (null process)
+    (unless process
       (with-current-buffer (get-buffer-create
                             lexic-process-buffer-name)
         (erase-buffer)
-        (setq process (apply 'start-process
+        (setq process (apply #'start-process
                              lexic-process-name
                              lexic-process-buffer-name
                              lexic-program-path
@@ -565,8 +568,8 @@ Remove it and return t if found. Return nil otherwise."
 
 (defun lexic-format-result (result)
   "For a given RESULT from lexic, test for failure and format accordingly.
-Entries are sorted by their :priority in `lexic-dictionary-specs', and formatted by
-`lexic-format-result' in the case of success, `lexic-format-failure' otherwise."
+Entries are sorted by their :priority in `lexic-dictionary-specs', then formatted
+by `lexic-format-result' in successful lexic, `cases-format-failure' otherwise."
 
   (if (lexic-failed-p result)
       (lexic-format-failure result)
@@ -648,7 +651,7 @@ Returns a list of plists with keys :word, :dict, and :info."
                                        (car dict-suggestions))
                                       'face 'outline-3)
                           (propertize
-                           (mapconcat 'identity (cadr dict-suggestions) "\n\u200B\u200B\u200B")
+                           (mapconcat #'identity (cadr dict-suggestions) "\n\u200B\u200B\u200B")
                            'face 'font-lock-keyword-face)))
                 (sort suggestions
                       (lambda (a b)
@@ -656,7 +659,7 @@ Returns a list of plists with keys :word, :dict, and :info."
                            (or (lexic-dictionary-spec (car b) :priority) 1))))
                 "\n"))))
 
-(defun lexic-format-entry (entry &optional expected-word)
+(defun lexic-format-entry (entry &optional _expected-word)
   "Format a given ENTRY, a plist with :word :dict and :info.
 If the DICT has a :short value in `lexic-dictionary-specs' that is used as
 the display name. Likewise if present, :formatter is used to generate the
@@ -669,7 +672,7 @@ entry."
      "\n\u2008\n"
      (if-let* ((formatter (lexic-dictionary-spec dict :formatter)))
          (let ((case-fold-search nil))
-           (string-trim (funcall formatter entry expected-word)))
+           (string-trim (funcall formatter entry _expected-word)))
        (plist-get entry :info))
      "\n")))
 
@@ -732,8 +735,9 @@ entry."
      :short "Synonyms"
      :formatter lexic-format-soule
      :priority 5))
-  "Alist of dictionary information, where the car is the name
-according to lexic, and the cdr is a plist whith the following options:
+  "List of dictionary specifications.
+In each entry the car is the name according to lexic, and the cdr is
+a plist whith the following options:
   :short - a (usually) shorter display name for the dictionary
   :formatter - a function with signature (ENTRY WORD) that returns a string
   :priority - sort priority, defaults to 1")
@@ -744,8 +748,8 @@ according to lexic, and the cdr is a plist whith the following options:
 
 (defun lexic-format-webster (entry &optional _expected-word)
   "Make a Webster's dictionary ENTRY for WORD look nice.
-Designed for Webster's Revised Unabridged Dictionary (1913),
-as found at http://download.huzheng.org/dict.org/stardict-dictd-web1913-2.4.2.tar.bz2.
+Designed for Webster's Revised Unabridged Dictionary (1913),as found at
+http://download.huzheng.org/dict.org/stardict-dictd-web1913-2.4.2.tar.bz2.
 
 This should also work nicely with GCIDE."
   (->> (plist-get entry :info)
@@ -1377,7 +1381,7 @@ This should also work nicely with GCIDE."
     content))
 
 (defun lexic-format-webster-diacritics (pronunciation)
-  "Replace ascii pronounciation symbols in PRONOUNCIATION with unicode equivalents."
+  "Replace ascii pronounciation symbols in PRONUNCIATION with unicode equivalents."
   (let ((diacritics
          '(("[,C]" "Ç")
            ("\"u" "ü") ; uum
@@ -1723,11 +1727,11 @@ This should also work nicely with GCIDE."
     pronunciation))
 
 (defun lexic-format-reflow-text (text max-width &optional min-width initial-colunm indent sepregex)
-  "Add new lines as appropriate to ensure that TEXT never goes above MAX-WIDTH columns.
+  "Add newlines as required to ensure that TEXT never exceeds MAX-WIDTH columns.
 
 Can also set a MIN-WIDTH for new lines of text created by a line break,
-an INITIAL-COLUNM that the text starts at, and an INDENT string to be inserted after every
-line break.
+an INITIAL-COLUNM that the text starts at, and an INDENT string to be inserted
+after every line break.
 
 When regex SEPREGEX is provided, it is used to detect word seperators.
 It is \"[ ,.]\" by default."
