@@ -35,11 +35,20 @@ better, a PR!
 + (/optional/) ~visual-fill-column-mode~
 
 * Configuration
-If you happen to use Doom, you may find [[https://tecosaur.github.io/emacs-config/config.html#lexic][this section]] of my config interesting.
+If you happen to use Doom, you may find [[https://tecosaur.github.io/emacs-config/config.html#dictionary][this section]] of my config interesting.
 
-To set up Lexic to work with your installed dictionaries you want to look at the
-~lexic-dictionary-specs~ variable which formats results based on the =bookname=
-parameter of the =sdcv= dictionary's =.ifo= file.
+In order to recognise format one of the supported dictionaries, Lexic
+matches the =bookname== parameter from the StarDict =.ifo= file against the entries
+in ~lexic-dictionary-specs~. Lexic needs to do this, because formatting is
+inconsistent, and so must be implemented on a per-dictionary basis.
+
+For example, if I downloaded a copy of /Soule's English Synonyms/, I'd need to
+make sure that the =SoulesSynonymns.ifo= file contains the line ~bookname=Soule's
+Dictionary of English Synonyms~. Check the value of ~lexic-dictionary-specs~ to see
+what it expects for other dictionaries supported by default.
+
+Then, if I open a new Emacs session, and look for a synonym I should see it
+formatted nicely 🙂.
 
 * Demo
 [[https://tecosaur.com/lfs/lexic/lexic.gif]]
