@@ -750,7 +750,7 @@ a plist whith the following options:
   "Helper function to get a :SPEC of a given DICT."
   (plist-get (cdr (assoc dict lexic-dictionary-specs)) spec))
 
-(defun lexic-format-webster (entry &optional expected-word)
+(defun lexic-format-webster (entry &optional _expected-word)
   "Make a Webster's dictionary ENTRY for WORD look nice.
 Designed for Webster's Revised Unabridged Dictionary (1913),as found at
 http://download.huzheng.org/dict.org/stardict-dictd-web1913-2.4.2.tar.bz2.
@@ -1774,7 +1774,7 @@ It is \"[ ,.]\" by default."
                text))))
     reflowed-text))
 
-(defun lexic-format-online-etym (entry &optional expected-word)
+(defun lexic-format-online-etym (entry &optional _expected-word)
   "Make an html ENTRY look nice.
 Designed for an export of Douglas Harper's Online Etymology Dictionary,
 collected using https://framagit.org/tuxor1337/dictmaster."
@@ -1853,7 +1853,7 @@ collected using https://framagit.org/tuxor1337/dictmaster."
         (lambda (match)
           (lexic-format-reflow-text match 80 5)))))
 
-(defun lexic-format-element (entry &optional expected-word)
+(defun lexic-format-element (entry &optional _expected-word)
   "Make an ENTRY for an element Look nice.
 Based on http://download.huzheng.org/dict.org/stardict-dictd_www.dict.org_elements-2.4.2.tar.bz2."
   (replace-regexp-in-string
@@ -1878,7 +1878,7 @@ Atomic weight: \\((?[0-9.]+)?\\)"
         (propertize element 'face 'font-lock-string-face))))
    (plist-get entry :info)))
 
-(defun lexic-format-soule (entry &optional expected-word)
+(defun lexic-format-soule (entry &optional _expected-word)
   "Format an ENTRY for WORD in Soule's Dictionary of English Synonyms.
 Designed using http://download.huzheng.org/bigdict/stardict-Soule_s_Dictionary_of_English_Synonyms-2.4.2.tar.bz2."
   (->> (plist-get entry :info)
