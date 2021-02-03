@@ -122,7 +122,7 @@ Any cons cell here means using all dictionaries.")
   "The path of lexic program.")
 
 (defvar lexic-dictionary-path nil
-  "The path of dictionaries.")
+  "The path to the dictionaries.")
 
 (defvar lexic-word-processor nil
   "This is the function that take a word (stirng)
@@ -292,7 +292,7 @@ TODO decouple the tool from the general method."
   "Generate the appropriate stcv dictionary argument.
 Using `lexic-current-dictionary-list' and `lexic-dictionary-path'."
   (append
-   (and lexic-dictionary-path (list "--data-dir" lexic-dictionary-path))
+   (and lexic-dictionary-path (list "--data-dir" (expand-file-name lexic-dictionary-path)))
    (and (listp lexic-current-dictionary-list)
         (mapcan (lambda (dict)
                   (list "-u" dict))
