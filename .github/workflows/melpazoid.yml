@@ -23,5 +23,5 @@ jobs:
       - name: Run
         env:
           RECIPE: (lexic :repo "tecosaur/lexic" :fetcher github)
-          EXIST_OK: false
+          EXIST_OK: true
         run: echo $GITHUB_REF && make -C ~/melpazoid
