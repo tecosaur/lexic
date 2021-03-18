@@ -977,6 +977,7 @@ This should also work nicely with GCIDE."
                ("Cath\\. Dict"            "Catholic Dictionary")
                ("Celt"                    "Celtic")
                ("cf"                      "confer")
+               ("Cf"                      "Confer")
                ("Ch"                      "Church")
                ("Chald"                   "Chaldee")
                ("Chem"                    "Chemistry")
