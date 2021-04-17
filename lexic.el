@@ -2159,6 +2159,7 @@ https://nikita-moor.github.io/dictionaries/dictionaries.html"
             ;; lets keep it commented for now
             ;; ("A Latin Dictionary, Lewis & Short (1879)"
             ;;  (replace-regexp-in-string "\\(^ *[A-Z]. \\) " " \\1" formatted))
+            (_ info)
             ))
          (root-node (with-temp-buffer
                       (insert formatted)
