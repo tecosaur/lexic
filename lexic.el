@@ -1916,5 +1916,86 @@ Designed using http://download.huzheng.org/bigdict/stardict-Soule_s_Dictionary_o
         ","
         (propertize "," 'face 'font-lock-type-face))))
 
+(defun lexic-dictionary-help ()
+  "Show the Lexic help page."
+  (interactive)
+  (let ((dict-help-buf (get-buffer-create "*lexic-dict-help*")))
+    (with-current-buffer dict-help-buf
+      (insert "#+title: Lexic Dictionary Help
+#+author: TEC
+
+* sdcv
+
+First you want to make sure you have the *stardict* CLI tool =sdcv=.
+It should be available in [[https://repology.org/project/sdcv/versions][many package repositories]] under that name.
+
+Not that by itself =sdcv= does not come with any dictionaries, you'll need to install those yourself.
+
+* Downloading dictionaries
+
+You can find quite a few dictionaries on http://download.huzheng.org/dict.org/
+and http://download.huzheng.org/bigdict/. By default, Lexic will provide nice
+formatting for some of these. Namely:
+
+| Dictionary             | Recognised ~bookname~                            |
+|------------------------+------------------------------------------------|
+| [[http://download.huzheng.org/dict.org/stardict-dictd-web1913-2.4.2.tar.bz2.][Webster 1913]]        | =Webster's Revised Unabridged Dictionary (1913)= |
+| [[http://download.huzheng.org/dict.org/stardict-dictd_www.dict.org_elements-2.4.2.tar.bz2][Elements]]             | =Elements database=                              |
+| Hitchcock's Bible Name | =Hitchcock's Bible Names Dictionary=             |
+| Online Etymology       | =Online Etymology Dictionary=                    |
+| [[http://download.huzheng.org/bigdict/stardict-Soule_s_Dictionary_of_English_Synonyms-2.4.2.tar.bz2][Soule's Synonyms]]     | =Soule's Dictionary of English Synonyms=         |
+
+The stardict form of the /Online Etymology Dictionary/ can be created by running
+[[https://framagit.org/tuxor1337/dictmaster][dictmaster]]. Unfortunately I do not know of any nice hosted result of this.
+
+* Installing dictionaries
+
+By default =sdcv= will look for dictionaries in =$HOME/.stardict/dic=, but this can
+be changed by setting environment variable =STARDICT_DATA_DIR=.
+
+I recommend creating a folder for each dictionary in =STARDICT_DATA_DIR=, for
+example:
+
+#+begin_example
+$STARDICT_DATA_DIR
+├── elements
+├── etymology
+├── hitchcock
+├── synonyms
+└── webster
+#+end_example
+
+A particular dictionary is composed of a few files:
++ =DICT.dict.dz=
++ =DICT.idx=
++ =DICT.idx.oft=
++ =DICT.ifo=
++ =DICT.oft=
+
+For our purposes, we only care about the =.ifo= (info) file. It should look
+something like this.
+#+begin_example
+StarDict's dict ifo file
+version=2.4.2
+wordcount=160161
+idxfilesize=3024035
+bookname=Webster's Revised Unabridged Dictionary (1913)
+description=Connoisseur's reference to American English
+date=2007.8.28
+sametypesequence=m
+#+end_example
+
+We are particularly interested in the ~bookname=~ line, as if you have one of the
+[[Downloading dictionaries][recognised dictionaries]] in order to get the nice formatting you need to set the
+~bookname~ to the recognised value.
+
+* Using Lexic
+
+Once you have =sdcv= and some dictionaries installed, just go ahead and try =M-x
+lexic-search= 🙂.")
+      (goto-char (point-min))
+      (org-mode))
+    (switch-to-buffer-other-window dict-help-buf)))
+
 (provide 'lexic)
 ;;; lexic.el ends here
