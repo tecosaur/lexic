@@ -1932,7 +1932,10 @@ Designed using http://download.huzheng.org/bigdict/stardict-Soule_s_Dictionary_o
   (interactive)
   (let ((dict-help-buf (get-buffer-create "*lexic-dict-help*")))
     (with-current-buffer dict-help-buf
-      (insert "#+title: Lexic Dictionary Help
+      (setq buffer-read-only t)
+      (with-silent-modifications
+        (erase-buffer)
+        (insert "#+title: Lexic Dictionary Help
 #+author: TEC
 
 * sdcv
@@ -1961,8 +1964,9 @@ The stardict form of the /Online Etymology Dictionary/ can be created by running
 
 * Installing dictionaries
 
-By default =sdcv= will look for dictionaries in =$HOME/.stardict/dic=, but this can
-be changed by setting environment variable =STARDICT_DATA_DIR=.
+By default =sdcv= will look for dictionaries in =$HOME/.stardict/dic=, (do take note
+of the =dic= part of the path) but this can be changed by setting environment
+variable =STARDICT_DATA_DIR=.
 
 I recommend creating a folder for each dictionary in =STARDICT_DATA_DIR=, for
 example:
@@ -1970,18 +1974,23 @@ example:
 #+begin_example
 $STARDICT_DATA_DIR
 ├── elements
+│   └── ...
 ├── etymology
+│   └── ...
 ├── hitchcock
+│   └── ...
 ├── synonyms
+│   ├── SoulesSynonyms.dict.dz
+│   ├── SoulesSynonyms.idx
+│   └── SoulesSynonyms.ifo
 └── webster
+    └── ...
 #+end_example
 
 A particular dictionary is composed of a few files:
 + =DICT.dict.dz=
 + =DICT.idx=
-+ =DICT.idx.oft=
 + =DICT.ifo=
-+ =DICT.oft=
 
 For our purposes, we only care about the =.ifo= (info) file. It should look
 something like this.
@@ -2003,9 +2012,10 @@ We are particularly interested in the ~bookname=~ line, as if you have one of th
 * Using Lexic
 
 Once you have =sdcv= and some dictionaries installed, just go ahead and try =M-x
-lexic-search= 🙂.")
+lexic-search= 🙂."))
       (goto-char (point-min))
-      (org-mode))
+      (org-mode)
+      (set-transient-map special-mode-map t))
     (switch-to-buffer-other-window dict-help-buf)))
 
 (provide 'lexic)
