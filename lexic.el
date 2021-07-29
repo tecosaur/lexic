@@ -11,7 +11,7 @@
 ;; Maintainer: TEC <tec@tecosaur.com>
 ;; Version: 0.0.1
 ;; Homepage: https://github.com/tecosaur/lexic
-;; Package-Requires: ((emacs "26.3") (visual-fill-column "2.2"))
+;; Package-Requires: ((emacs "26.3"))
 
 ;;; License:
 
@@ -91,10 +91,9 @@
 ;;; Code:
 
 (require 'outline)
-(require 'visual-fill-column)
+(require 'visual-fill-column nil t)
 (require 'cl-lib)
 (require 'subr-x)
-(require 'display-line-numbers)
 
 (declare-function spell-fu-mode "spell-fu")
 
@@ -386,8 +385,9 @@ Consider resolving any edge cases with an addition to `lexic-mode-hook'."
   (setq buffer-read-only t)
   (setq-local outline-regexp "\u200B+")
   (setq-local outline-heading-end-regexp "\u2008")
-  (setq-local visual-fill-column-center-text t)
-  (visual-fill-column-mode 1))
+  (when (featurep 'visual-fill-column)
+    (setq-local visual-fill-column-center-text t)
+    (visual-fill-column-mode 1)))
 
 (defun lexic-mode-reinit ()
   "Re-initialize buffer.
