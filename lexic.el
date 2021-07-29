@@ -216,7 +216,8 @@ TODO decouple the tool from the general method."
           (guess (or (and transient-mark-mode mark-active
                           (buffer-substring-no-properties
                            (region-beginning) (region-end)))
-                     (current-word nil t)))
+                     (current-word nil t)
+                     "lexical"))
           (word (read-string (format "Search dict (default: %s): " guess)
                              nil nil guess)))
      (list word dict-list-name dict-list t)))
@@ -279,7 +280,9 @@ TODO decouple the tool from the general method."
     (or (and transient-mark-mode mark-active
              (buffer-substring-no-properties
               (region-beginning) (region-end)))
-        (current-word nil t))) nil nil t))
+        (current-word nil t)
+        "lexical"))
+   nil nil t))
 
 (defun lexic-list-dictionary ()
   "Show available dictionaries."
