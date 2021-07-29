@@ -604,9 +604,9 @@ by `lexic-format-result' in successful case, `cases-format-failure' otherwise."
   (let ((dicts? (not (string-match-p "\\`Dictionary's name +Word count[\n ]+\\'"
                                      (shell-command-to-string (concat lexic-program-path " -l"))))))
     (if dicts?
-        (message "Couldn't find anything similar to your search, sorry :(")
-      (message "No results found, but you don't seem to have any dictionaries installed! Try %s"
-               (propertize "M-x lexic-dictionary-help" 'face 'font-lock-keyword-face)))))
+        (user-error "Couldn't find anything similar to your search, sorry :(")
+      (user-error "No results found, but you don't seem to have any dictionaries installed! Try %s"
+                  (propertize "M-x lexic-dictionary-help" 'face 'font-lock-keyword-face)))))
 
 (defun lexic-parse-results (result)
   "Loop through every entry in RESULT and parse each one.
