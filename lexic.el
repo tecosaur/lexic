@@ -507,9 +507,10 @@ Optional argument RAW-P signals whether the result should be formatted or not."
 (defun lexic-oneshot-lookup (word &optional raw-p args)
   "Use a oneshot stcv process just to look up WORD, with ARGS.
 Optional argument RAW-P signals whether the result should be formatted or not."
-  (let ((result (shell-command-to-string
-                 (concat lexic-program-path " -n " args
-                         " '" (replace-regexp-in-string "'" "\\'" word) "'"))))
+  (let ((result (with-temp-buffer
+                  (apply #'call-process lexic-program-path nil t nil
+                         (append '("-n") args (list word)))
+                  (buffer-string))))
     (if raw-p result
       (lexic-format-result result))))
 
@@ -1800,8 +1801,7 @@ collected using https://framagit.org/tuxor1337/dictmaster."
               (lexic-parse-results
                (lexic-oneshot-lookup
                 (replace-regexp-in-string " ?(.*)" " (*)" (plist-get entry :word)) ; lexic accepts a glob
-                t (format "-0 -u '%s'"
-                          (replace-regexp-in-string "'" "\\'" (plist-get entry :dict))))))))
+                t (list "-0" "-u" (plist-get entry :dict)))))))
     (replace-regexp-in-string
      "\\(?:\\`\\|\n\n\\)<b>\\(.+?\\) (\\(.+?\\)\\([0-9]+\\)?)</b> ?"
      (lambda (match)
