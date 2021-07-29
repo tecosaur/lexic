@@ -357,7 +357,7 @@ Using `lexic-current-dictionary-list' and `lexic-dictionary-path'."
 ;;; ==================================================================
 
 (defvar lexic-mode-map
-  (let ((map (make-sparse-keymap)))
+  (let ((map (copy-keymap special-mode-map)))
     (define-key map "q" 'lexic-return-from-lexic)
     (define-key map (kbd "RET") 'lexic-search-word-at-point)
     (define-key map "a" 'outline-show-all)
@@ -370,10 +370,12 @@ Using `lexic-current-dictionary-list' and `lexic-dictionary-path'."
     (define-key map "P" (lambda () (interactive) (lexic-previous-entry t)))
     (define-key map "b" 'lexic-search-history-backwards)
     (define-key map "f" 'lexic-search-history-forwards)
+    (set-keymap-parent map special-mode-map)
     map)
   "Keymap for `lexic-mode'.")
 
-(define-derived-mode lexic-mode text-mode "lexic"
+
+(define-derived-mode lexic-mode fundamental-mode "lexic"
   "Major mode to look up word through lexic.
 \\{lexic-mode-map}
 Turning on lexic mode runs the normal hook `lexic-mode-hook'.
@@ -381,16 +383,11 @@ Turning on lexic mode runs the normal hook `lexic-mode-hook'.
 This mode locally removes any `spell-fu-mode' or `flyspell-mode' entries in
 `text-mode-hook', but won't catch any other spell-checking initialisation.
 Consider resolving any edge cases with an addition to `lexic-mode-hook'."
-  (setq-local text-mode-hook
-              (remove #'spell-fu-mode
-                      (remove #'flyspell-mode
-                              text-mode-hook)))
   (setq buffer-read-only t)
   (setq-local outline-regexp "\u200B+")
   (setq-local outline-heading-end-regexp "\u2008")
   (setq-local visual-fill-column-center-text t)
-  (visual-fill-column-mode 1)
-  (setq-local display-line-numbers-type nil))
+  (visual-fill-column-mode 1))
 
 (defun lexic-mode-reinit ()
   "Re-initialize buffer.
