@@ -338,6 +338,7 @@ Using `lexic-current-dictionary-list' and `lexic-dictionary-path'."
 (defun lexic-return-from-lexic ()
   "Bury lexic buffer and restore the previous window configuration."
   (interactive)
+  (kill-process (get-process lexic-process-name))
   (if (window-configuration-p lexic-previous-window-conf)
       (progn
         (set-window-configuration lexic-previous-window-conf)
