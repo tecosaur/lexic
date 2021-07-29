@@ -573,10 +573,12 @@ Remove it and return t if found. Return nil otherwise."
   "For a RESULT from lexic, test for failure and format accordingly.
 Entries are sorted by their :priority in `lexic-dictionary-specs' then formatted
 by `lexic-format-result' in successful case, `cases-format-failure' otherwise."
-
-  (if (lexic-failed-p result)
-      (lexic-format-failure result)
-
+  (cond
+   ((string-match-p "^Nothing similar to" result)
+    (lexic-consider-no-results))
+   ((lexic-failed-p result)
+    (lexic-format-failure result))
+   (t
     (let* ((entries
             (sort (lexic-parse-results result)
                   (lambda (a b)
@@ -593,7 +595,16 @@ by `lexic-format-result' in successful case, `cases-format-failure' otherwise."
               (mapcar (lambda (e)
                         (lexic-format-entry
                          e word))
-                      entries))))))
+                      entries)))))))
+
+(defun lexic-consider-no-results ()
+  "No results have been found. What should we tell the user?"
+  (let ((dicts? (not (string-match-p "\\`Dictionary's name +Word count[\n ]+\\'"
+                                     (shell-command-to-string (concat lexic-program-path " -l"))))))
+    (if dicts?
+        (message "Couldn't find anything similar to your search, sorry :(")
+      (message "No results found, but you don't seem to have any dictionaries installed! Try %s"
+               (propertize "M-x lexic-dictionary-help" 'face 'font-lock-keyword-face)))))
 
 (defun lexic-parse-results (result)
   "Loop through every entry in RESULT and parse each one.
