@@ -153,8 +153,8 @@ which will cause all avalible dictionaries to be used.")
 (defvar lexic-wait-interval 0.1
   "The interval (in seconds) to sleep each time to wait for lexic's output.")
 
-(defconst lexic-process-name "%lexic-mode-process%")
-(defconst lexic-process-buffer-name "*lexic-mode-process*")
+(defconst lexic-process-name " %lexic-mode-process%")
+(defconst lexic-process-buffer-name " *lexic-mode-process*")
 
 (defvar lexic-word-prompts '("Enter word or phrase: ")
   "A list of prompts that lexic use to prompt for word.")
