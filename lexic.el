@@ -2,7 +2,7 @@
 
 ;; Copyright 2006~2008 pluskid,
 ;;           2011~2012 gucong
-;;           2020 tecosaur
+;;           2020~2021 tecosaur
 
 ;; Author: pluskid <pluskid@gmail.com>,
 ;;         gucong <gucong43216@gmail.com>,
@@ -11,7 +11,7 @@
 ;; Maintainer: TEC <tec@tecosaur.com>
 ;; Version: 0.0.1
 ;; Homepage: https://github.com/tecosaur/lexic
-;; Package-Requires: ((emacs "26.3") (dash "2.17.0") (visual-fill-column "2.2"))
+;; Package-Requires: ((emacs "26.3") (visual-fill-column "2.2"))
 
 ;;; License:
 
@@ -91,7 +91,6 @@
 ;;; Code:
 
 (require 'outline)
-(require 'dash)
 (require 'visual-fill-column)
 (require 'cl-lib)
 (require 'subr-x)
@@ -756,7 +755,7 @@ Designed for Webster's Revised Unabridged Dictionary (1913),as found at
 http://download.huzheng.org/dict.org/stardict-dictd-web1913-2.4.2.tar.bz2.
 
 This should also work nicely with GCIDE."
-  (->> (plist-get entry :info)
+  (thread-last (plist-get entry :info)
        (lexic-format-webster-diacritics)
        (replace-regexp-in-string ; entry dividors
         (format "\n\n\\(%s\\)" (plist-get entry :word))
@@ -1779,80 +1778,85 @@ It is \"[ ,.]\" by default."
   "Make an html ENTRY look nice.
 Designed for an export of Douglas Harper's Online Etymology Dictionary,
 collected using https://framagit.org/tuxor1337/dictmaster."
-  (->> (string-join
-        (mapcar (lambda (e) (plist-get e :info))
-                (-filter (lambda (e) (string= (plist-get e :dict)
-                                              (plist-get entry :dict)))
-                         (lexic-parse-results
-                          (lexic-oneshot-lookup
-                           (replace-regexp-in-string " ?(.*)" " (*)" (plist-get entry :word)) ; lexic accepts a glob
-                           t (format "-0 -u '%s'" (replace-regexp-in-string "'" "\\'" (plist-get entry :dict))))))))
-       (replace-regexp-in-string
-        "\\(?:\\`\\|\n\n\\)<b>\\(.+?\\) (\\(.+?\\)\\([0-9]+\\)?)</b> ?"
-        (lambda (match)
-          (let ((word (match-string 1 match))
-                (pos (lexic-format-expand-abbreviations (match-string 2 match)))
-                (index (match-string 3 match)))
-            (concat "\n\n\u200B\u200B\u200B"
-                    (propertize word 'face 'bold)
-                    " "
-                    (propertize pos 'face '(bold font-lock-keyword-face))
-                    (when index
-                      (propertize (concat " " index) 'face '(italic font-lock-doc-face)))
-                    "\u2008\n\n"))))
-       (replace-regexp-in-string
-        "<i>\\(.*?\\)</i>"
-        (lambda (match) (propertize (match-string 1 match) 'face 'italic)))
-       (replace-regexp-in-string
-        "<b>\\(.*?\\)</b>"
-        (lambda (match) (propertize (match-string 1 match) 'face 'bold)))
-       (replace-regexp-in-string
-        "<strong>\\(.*?\\)</strong>"
-        (lambda (match) (propertize (match-string 1 match) 'face 'font-lock-constant-face)))
-       (replace-regexp-in-string
-        "<a href=\".*?\">\\(.*?\\)</a>"
-        (lambda (match) (propertize (match-string 1 match) 'face 'font-lock-keyword-face)))
-       (replace-regexp-in-string
-        "<span style=\".*?\">\\(.*?\\)</span>"
-        (lambda (match) (propertize (match-string 1 match) 'face 'font-lock-doc-face)))
-       (replace-regexp-in-string
-        "[0-9]\\{4\\}s?\\|[0-9]+c\\."
-        (lambda (match) (propertize match 'face 'font-lock-string-face)))
-       (replace-regexp-in-string
-        "<span>\\(.*?\\)</span>\\( (.+?)\\)?"
-        (lambda (match)
-          (let ((linked (match-string 1 match))
-                (pos (lexic-format-expand-abbreviations (match-string 2 match))))
-            (concat
-             (propertize linked 'face 'font-lock-keyword-face)
-             (when pos (propertize (replace-regexp-in-string "\\([0-9]+\\))" " \\1)" pos)
-                                   'face '(bold diff-context)))))))
-       (replace-regexp-in-string
-        "<blockquote>\\(.+?\\) ?\\[\\(.+\\)\\]</blockquote>"
-        (lambda (match)
-          (concat "❝"
-                  (propertize
-                   (lexic-format-reflow-text
-                    (match-string 1 match) 80 5 1 " ")
-                   'face 'diff-context)
-                  "❞\n"
-                  (propertize (concat " ──"
-                                      (lexic-format-reflow-text (match-string 2 match)
-                                                                75 5 3 "   "))
-                              'face '(italic font-lock-type-face)))))
-       (replace-regexp-in-string "<br/>\n?<br/>" "\n")
-       (replace-regexp-in-string
-        "<p>\\(.*?\\)</p>"
-        (lambda (match)
-          (concat
-           (lexic-format-reflow-text (match-string 1 match)
-                                     80 5)
-           "\n")))
-       (replace-regexp-in-string "</?p>" "") ; any straggling pars
-       (replace-regexp-in-string
-        "^.\\{86,\\}"
-        (lambda (match)
-          (lexic-format-reflow-text match 80 5)))))
+  (thread-last
+      (string-join
+       (delq nil
+             (mapcar
+              (lambda (e)
+                (when (string= (plist-get e :dict)
+                               (plist-get entry :dict))
+                  (plist-get e :info)))
+              (lexic-parse-results
+               (lexic-oneshot-lookup
+                (replace-regexp-in-string " ?(.*)" " (*)" (plist-get entry :word)) ; lexic accepts a glob
+                t (format "-0 -u '%s'"
+                          (replace-regexp-in-string "'" "\\'" (plist-get entry :dict))))))))
+    (replace-regexp-in-string
+     "\\(?:\\`\\|\n\n\\)<b>\\(.+?\\) (\\(.+?\\)\\([0-9]+\\)?)</b> ?"
+     (lambda (match)
+       (let ((word (match-string 1 match))
+             (pos (lexic-format-expand-abbreviations (match-string 2 match)))
+             (index (match-string 3 match)))
+         (concat "\n\n\u200B\u200B\u200B"
+                 (propertize word 'face 'bold)
+                 " "
+                 (propertize pos 'face '(bold font-lock-keyword-face))
+                 (when index
+                   (propertize (concat " " index) 'face '(italic font-lock-doc-face)))
+                 "\u2008\n\n"))))
+    (replace-regexp-in-string
+     "<i>\\(.*?\\)</i>"
+     (lambda (match) (propertize (match-string 1 match) 'face 'italic)))
+    (replace-regexp-in-string
+     "<b>\\(.*?\\)</b>"
+     (lambda (match) (propertize (match-string 1 match) 'face 'bold)))
+    (replace-regexp-in-string
+     "<strong>\\(.*?\\)</strong>"
+     (lambda (match) (propertize (match-string 1 match) 'face 'font-lock-constant-face)))
+    (replace-regexp-in-string
+     "<a href=\".*?\">\\(.*?\\)</a>"
+     (lambda (match) (propertize (match-string 1 match) 'face 'font-lock-keyword-face)))
+    (replace-regexp-in-string
+     "<span style=\".*?\">\\(.*?\\)</span>"
+     (lambda (match) (propertize (match-string 1 match) 'face 'font-lock-doc-face)))
+    (replace-regexp-in-string
+     "[0-9]\\{4\\}s?\\|[0-9]+c\\."
+     (lambda (match) (propertize match 'face 'font-lock-string-face)))
+    (replace-regexp-in-string
+     "<span>\\(.*?\\)</span>\\( (.+?)\\)?"
+     (lambda (match)
+       (let ((linked (match-string 1 match))
+             (pos (lexic-format-expand-abbreviations (match-string 2 match))))
+         (concat
+          (propertize linked 'face 'font-lock-keyword-face)
+          (when pos (propertize (replace-regexp-in-string "\\([0-9]+\\))" " \\1)" pos)
+                                'face '(bold diff-context)))))))
+    (replace-regexp-in-string
+     "<blockquote>\\(.+?\\) ?\\[\\(.+\\)\\]</blockquote>"
+     (lambda (match)
+       (concat "❝"
+               (propertize
+                (lexic-format-reflow-text
+                 (match-string 1 match) 80 5 1 " ")
+                'face 'diff-context)
+               "❞\n"
+               (propertize (concat " ──"
+                                   (lexic-format-reflow-text (match-string 2 match)
+                                                             75 5 3 "   "))
+                           'face '(italic font-lock-type-face)))))
+    (replace-regexp-in-string "<br/>\n?<br/>" "\n")
+    (replace-regexp-in-string
+     "<p>\\(.*?\\)</p>"
+     (lambda (match)
+       (concat
+        (lexic-format-reflow-text (match-string 1 match)
+                                  80 5)
+        "\n")))
+    (replace-regexp-in-string "</?p>" "") ; any straggling pars
+    (replace-regexp-in-string
+     "^.\\{86,\\}"
+     (lambda (match)
+       (lexic-format-reflow-text match 80 5)))))
 
 (defun lexic-format-element (entry &optional _expected-word)
   "Make an ENTRY for an element Look nice.
@@ -1882,7 +1886,7 @@ Atomic weight: \\((?[0-9.]+)?\\)"
 (defun lexic-format-soule (entry &optional _expected-word)
   "Format an ENTRY for WORD in Soule's Dictionary of English Synonyms.
 Designed using http://download.huzheng.org/bigdict/stardict-Soule_s_Dictionary_of_English_Synonyms-2.4.2.tar.bz2."
-  (->> (plist-get entry :info)
+  (thread-last (plist-get entry :info)
        (replace-regexp-in-string ; categories
         "^\\([IVX]+\\. \\)?\\([a-z.;& ]+\\)"
         (lambda (match)
