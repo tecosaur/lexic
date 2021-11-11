@@ -1,7 +1,8 @@
-#+TITLE: Emacs Lexical Information Viewer
-#+AUTHOR: tecosaur
+#+title: Emacs Lexical Information Viewer
+#+author: tecosaur
 
-#+HTML: <a href="https://melpa.org/#/lexic"><img src="https://melpa.org/packages/lexic-badge.svg"></a>
+#+html: <p><a href="https://melpa.org/#/lexic"><img src="https://melpa.org/packages/lexic-badge.svg"></a>
+#+html: <img src="https://img.shields.io/badge/stage-%CE%B2,%20refinement-orange?style=flat-square"></p>
 
 It's nice to know more about the words you're using. Online dictionaries have
 proliferated and become quite useful, and there are some nice packages available
