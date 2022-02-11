@@ -384,6 +384,9 @@ This mode locally removes any `spell-fu-mode' or `flyspell-mode' entries in
 `text-mode-hook', but won't catch any other spell-checking initialisation.
 Consider resolving any edge cases with an addition to `lexic-mode-hook'."
   (setq buffer-read-only t)
+  (add-hook 'kill-buffer-hook
+            (lambda () (kill-process (get-process lexic-process-name)))
+            nil t)
   (setq-local outline-regexp "\u200B+")
   (setq-local outline-heading-end-regexp "\u2008")
   (when (featurep 'visual-fill-column)
