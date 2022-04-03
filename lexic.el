@@ -271,6 +271,7 @@ TODO decouple the tool from the general method."
         (when (> min-height height)
           (window-resize window (- 12 height)))))))
 
+;;;###autoload
 (defun lexic-search-word-at-point ()
   "Perform `lexic-search' on the word at or near point."
   (interactive)
@@ -283,6 +284,7 @@ TODO decouple the tool from the general method."
         "lexical"))
    nil nil t))
 
+;;;###autoload
 (defun lexic-list-dictionary ()
   "Show available dictionaries."
   (interactive)
@@ -1931,6 +1933,7 @@ Designed using http://download.huzheng.org/bigdict/stardict-Soule_s_Dictionary_o
         ","
         (propertize "," 'face 'font-lock-type-face))))
 
+;;;###autoload
 (defun lexic-dictionary-help ()
   "Show the Lexic help page."
   (interactive)
