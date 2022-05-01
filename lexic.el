@@ -387,7 +387,10 @@ This mode locally removes any `spell-fu-mode' or `flyspell-mode' entries in
 Consider resolving any edge cases with an addition to `lexic-mode-hook'."
   (setq buffer-read-only t)
   (add-hook 'kill-buffer-hook
-            (lambda () (kill-process (get-process lexic-process-name)))
+            (lambda ()
+              (let ((proc (get-process lexic-process-name)))
+                (when (process-live-p proc)
+                  (kill-process proc))))
             nil t)
   (setq-local outline-regexp "\u200B+")
   (setq-local outline-heading-end-regexp "\u2008")
