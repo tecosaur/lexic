@@ -1,4 +1,4 @@
-;;; lexic.el --- A major mode to find out more about words -*- lexical-binding: t; -*-
+;;; lexic.el --- Offline Lexical, Dictionary and Thesaurus Major-Mode  -*- lexical-binding: t; -*-
 
 ;; Copyright 2006~2008 pluskid,
 ;;           2011~2012 gucong
