@@ -340,7 +340,7 @@ Using `lexic-current-dictionary-list' and `lexic-dictionary-path'."
 (defun lexic-return-from-lexic ()
   "Bury lexic buffer and restore the previous window configuration."
   (interactive)
-  (kill-process (get-process lexic-process-name))
+  (ignore-errors (kill-process (get-process lexic-process-name)))
   (if (window-configuration-p lexic-previous-window-conf)
       (progn
         (set-window-configuration lexic-previous-window-conf)
@@ -652,7 +652,7 @@ Returns a list of plists with keys :word, :dict, and :info."
   "When lexic failed to match the word, format the suggestions in RESULTS."
   (let (suggestions last-match)
     (while (setq last-match
-                 (string-match "^[0-9]+)\\(.*\\)-->\\([A-Za-z]+\\)"
+                 (string-match "^[0-9]+)\\(.*\\)-->\\(.*\\)"
                                results
                                (when last-match (1+ last-match))))
       (let ((dict (match-string 1 results))
@@ -662,6 +662,7 @@ Returns a list of plists with keys :word, :dict, and :info."
                     (list (append (cadr (assoc dict suggestions)) (list word))))
           (setq suggestions (append suggestions `((,dict . ((,word)))))))))
     (concat
+     "\u200B"
      (propertize
       (replace-regexp-in-string
        "items" "entries"
@@ -669,14 +670,25 @@ Returns a list of plists with keys :word, :dict, and :info."
       'face 'warning)
      "\n"
      (mapconcat (lambda (dict-suggestions)
-                  (format "\u200B\u200B%s\n\u200B\u200B\u200B%s"
+                  (format "%s\n%s"
                           (propertize (or
                                        (lexic-dictionary-spec (car dict-suggestions) :short)
                                        (car dict-suggestions))
                                       'face 'outline-3)
-                          (propertize
-                           (mapconcat #'identity (cadr dict-suggestions) "\n\u200B\u200B\u200B")
-                           'face 'font-lock-keyword-face)))
+			  (mapconcat (lambda (entry)
+				       (propertize
+					(format "\u200B\u200B%s" entry)
+					;; (mapconcat #'identity (cadr dict-suggestions) "\n\u200B\u200B\u200B")
+					'face 'font-lock-keyword-face
+					'keymap (let ((map (make-sparse-keymap)))
+						  (define-key map (kbd "<RET>")
+							      (lambda ()
+								(interactive)
+								(lexic-search entry nil (list (car dict-suggestions)) t)
+								(setq lexic-current-dictionary-list t)))
+						  map)))
+				     (cadr dict-suggestions)
+				     "\n")))
                 (sort suggestions
                       (lambda (a b)
                         (< (or (lexic-dictionary-spec (car a) :priority) 1)
